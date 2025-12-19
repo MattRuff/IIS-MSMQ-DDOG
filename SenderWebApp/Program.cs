@@ -1,5 +1,8 @@
 var builder = WebApplication.CreateBuilder(args);
 
+// Configure for Windows Service support
+builder.Host.UseWindowsService();
+
 // Add services to the container.
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
