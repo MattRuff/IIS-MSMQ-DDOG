@@ -166,19 +166,19 @@ Write-Host "  Sender Service: $senderServiceName" -ForegroundColor White
 Write-Host "  Receiver Service: $receiverServiceName" -ForegroundColor White
 Write-Host ""
 Write-Host "Applications:" -ForegroundColor Cyan
-Write-Host "  Sender:   http://localhost:8081" -ForegroundColor White
-Write-Host "  Receiver: http://localhost:8082" -ForegroundColor White
+Write-Host '  Sender:   http://localhost:8081' -ForegroundColor White
+Write-Host '  Receiver: http://localhost:8082' -ForegroundColor White
 Write-Host ""
 Write-Host "Manage Services:" -ForegroundColor Yellow
-Write-Host "  View:    services.msc" -ForegroundColor White
+Write-Host '  View:    services.msc' -ForegroundColor White
 Write-Host "  Stop:    Stop-Service $senderServiceName" -ForegroundColor White
 Write-Host "  Start:   Start-Service $senderServiceName" -ForegroundColor White
 Write-Host "  Status:  Get-Service $senderServiceName" -ForegroundColor White
 Write-Host ""
 Write-Host "Uninstall:" -ForegroundColor Yellow
-Write-Host "  .\install-as-services.ps1 -Uninstall" -ForegroundColor White
+Write-Host '  .\install-as-services.ps1 -Uninstall' -ForegroundColor White
 Write-Host ""
 Write-Host "Test:" -ForegroundColor Yellow
-Write-Host "  curl http://localhost:8081/api/order/test" -ForegroundColor White
+Write-Host '  curl http://localhost:8081/api/order/test' -ForegroundColor White
 Write-Host ""
 
