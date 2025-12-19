@@ -98,18 +98,18 @@ Write-Host "✅ Setup Complete!" -ForegroundColor Green
 Write-Host "========================================" -ForegroundColor Green
 Write-Host ""
 Write-Host "Applications:" -ForegroundColor Yellow
-Write-Host "  Sender:   http://localhost:5001" -ForegroundColor White
-Write-Host "  Receiver: http://localhost:5002" -ForegroundColor White
+Write-Host "  Sender:   http://localhost:8081" -ForegroundColor White
+Write-Host "  Receiver: http://localhost:8082" -ForegroundColor White
 Write-Host ""
 Write-Host "Swagger UI:" -ForegroundColor Yellow
-Write-Host "  http://localhost:5001/swagger" -ForegroundColor White
-Write-Host "  http://localhost:5002/swagger" -ForegroundColor White
+Write-Host "  http://localhost:8081/swagger" -ForegroundColor White
+Write-Host "  http://localhost:8082/swagger" -ForegroundColor White
 Write-Host ""
 Write-Host "Test the system:" -ForegroundColor Yellow
 Write-Host "  .\test-system.ps1" -ForegroundColor White
 Write-Host ""
 Write-Host "Or send a test order:" -ForegroundColor Yellow
-Write-Host '  curl http://localhost:5001/api/order/test' -ForegroundColor White
+Write-Host '  curl http://localhost:8081/api/order/test' -ForegroundColor White
 Write-Host ""
 Write-Host "Two PowerShell windows have opened showing the running apps." -ForegroundColor Gray
 Write-Host "Close those windows to stop the applications." -ForegroundColor Gray

@@ -8,12 +8,12 @@ Write-Host ""
 # Test Sender Health
 Write-Host "1. Testing Sender Health..." -ForegroundColor Yellow
 try {
-    $response = Invoke-RestMethod -Uri "http://localhost:5001/api/order/health" -Method Get
+    $response = Invoke-RestMethod -Uri "http://localhost:8081/api/order/health" -Method Get
     Write-Host "   Sender Status: OK" -ForegroundColor Green
     Write-Host "   Queue Available: $($response.queueAvailable)" -ForegroundColor Green
 } catch {
     Write-Host "   ERROR: Sender app not responding" -ForegroundColor Red
-    Write-Host "   Make sure the Sender app is running on port 5001" -ForegroundColor Yellow
+    Write-Host "   Make sure the Sender app is running on port 8081" -ForegroundColor Yellow
 }
 
 Write-Host ""
@@ -21,13 +21,13 @@ Write-Host ""
 # Test Receiver Health
 Write-Host "2. Testing Receiver Health..." -ForegroundColor Yellow
 try {
-    $response = Invoke-RestMethod -Uri "http://localhost:5002/api/status/health" -Method Get
+    $response = Invoke-RestMethod -Uri "http://localhost:8082/api/status/health" -Method Get
     Write-Host "   Receiver Status: OK" -ForegroundColor Green
     Write-Host "   Queue Available: $($response.queueAvailable)" -ForegroundColor Green
     Write-Host "   Messages in Queue: $($response.messagesInQueue)" -ForegroundColor Green
 } catch {
     Write-Host "   ERROR: Receiver app not responding" -ForegroundColor Red
-    Write-Host "   Make sure the Receiver app is running on port 5002" -ForegroundColor Yellow
+    Write-Host "   Make sure the Receiver app is running on port 8082" -ForegroundColor Yellow
 }
 
 Write-Host ""
@@ -35,7 +35,7 @@ Write-Host ""
 # Send Test Order
 Write-Host "3. Sending Test Order..." -ForegroundColor Yellow
 try {
-    $response = Invoke-RestMethod -Uri "http://localhost:5001/api/order/test" -Method Get
+    $response = Invoke-RestMethod -Uri "http://localhost:8081/api/order/test" -Method Get
     Write-Host "   Test Order Sent!" -ForegroundColor Green
     Write-Host "   Order ID: $($response.order.orderId)" -ForegroundColor Cyan
     Write-Host "   Customer: $($response.order.customerName)" -ForegroundColor Cyan
@@ -53,7 +53,7 @@ Start-Sleep -Seconds 3
 # Check Queue Status
 Write-Host "5. Checking Queue Status..." -ForegroundColor Yellow
 try {
-    $response = Invoke-RestMethod -Uri "http://localhost:5002/api/status/queue-status" -Method Get
+    $response = Invoke-RestMethod -Uri "http://localhost:8082/api/status/queue-status" -Method Get
     Write-Host "   Messages Remaining in Queue: $($response.messageCount)" -ForegroundColor Cyan
 } catch {
     Write-Host "   ERROR: Failed to check queue status" -ForegroundColor Red
@@ -77,7 +77,7 @@ Write-Host @"
     totalAmount = 149.99
 } | ConvertTo-Json
 
-Invoke-RestMethod -Uri "http://localhost:5001/api/order" -Method Post -Body `$body -ContentType "application/json"
+Invoke-RestMethod -Uri "http://localhost:8081/api/order" -Method Post -Body `$body -ContentType "application/json"
 "@ -ForegroundColor White
 
 Write-Host ""
