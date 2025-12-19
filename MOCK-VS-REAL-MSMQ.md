@@ -2,7 +2,15 @@
 
 This project supports two modes:
 
-## 🧪 **MOCK MODE** (Current Default)
+## 🪟 **REAL MSMQ MODE** (Current Default)
+- ✅ Real Windows MSMQ
+- ✅ Messages flow between apps properly
+- ✅ Ready for Datadog distributed tracing
+- ✅ Production-ready for demos
+- ⚠️ Windows only
+- ⚠️ Requires MSMQ installation
+
+## 🧪 **MOCK MODE**
 - ✅ Works on **Mac, Linux, and Windows**
 - ✅ No MSMQ installation needed
 - ✅ Uses in-memory queue
@@ -10,66 +18,51 @@ This project supports two modes:
 - ⚠️ Messages DON'T flow between apps (separate processes, separate memory)
 - ⚠️ Receiver won't see messages from Sender (unless on same server)
 
-## 🪟 **REAL MSMQ MODE**
-- ✅ Real Windows MSMQ
-- ✅ Messages flow between apps properly
-- ✅ Ready for Datadog distributed tracing
-- ⚠️ Windows only
-- ⚠️ Requires MSMQ installation
-
 ---
 
 ## 🔄 Switching Between Modes
 
-### To Use MOCK Mode (for local testing)
+### To Use REAL MSMQ Mode (Windows - Default)
 
-**Already configured!** Just build and run.
+**Already configured!** Just build and run on Windows:
+
+```powershell
+# On Windows
+.\setup-msmq.ps1  # If MSMQ not installed
+dotnet restore
+dotnet build -c Release
+.\run-applications.ps1
+```
+
+### To Use MOCK Mode (Mac/Linux/Windows without MSMQ)
+
+**Step 1: Update Program.cs files**
+
+In `SenderWebApp/Program.cs`:
+```csharp
+// REAL MSMQ MODE (comment this out)
+// builder.Services.AddSingleton<SenderWebApp.Services.IMsmqService, SenderWebApp.Services.MsmqService>();
+
+// MOCK MODE (uncomment this)
+builder.Services.AddSingleton<SenderWebApp.Services.IMsmqService, SenderWebApp.Services.MockMsmqService>();
+```
+
+In `ReceiverWebApp/Program.cs`:
+```csharp
+// REAL MSMQ MODE (comment this out)
+// builder.Services.AddSingleton<ReceiverWebApp.Services.IMsmqReceiverService, ReceiverWebApp.Services.MsmqReceiverService>();
+
+// MOCK MODE (uncomment this)
+builder.Services.AddSingleton<ReceiverWebApp.Services.IMsmqReceiverService, ReceiverWebApp.Services.MockMsmqReceiverService>();
+```
+
+**Step 2: Build and run**
 
 ```bash
 # On Mac/Linux/Windows
 dotnet build
 dotnet run --project SenderWebApp
 dotnet run --project ReceiverWebApp
-```
-
-### To Use REAL MSMQ Mode (Windows only)
-
-**Step 1: Rename files back**
-
-```powershell
-# In SenderWebApp/Services/
-mv MsmqService.cs.windows MsmqService.cs
-
-# In ReceiverWebApp/Services/  
-mv MsmqReceiverService.cs.windows MsmqReceiverService.cs
-```
-
-**Step 2: Update Program.cs files**
-
-In `SenderWebApp/Program.cs`:
-```csharp
-// MOCK MODE (comment this out)
-// builder.Services.AddSingleton<SenderWebApp.Services.IMsmqService, SenderWebApp.Services.MockMsmqService>();
-
-// REAL MSMQ MODE (uncomment this)
-builder.Services.AddSingleton<SenderWebApp.Services.IMsmqService, SenderWebApp.Services.MsmqService>();
-```
-
-In `ReceiverWebApp/Program.cs`:
-```csharp
-// MOCK MODE (comment this out)
-// builder.Services.AddSingleton<ReceiverWebApp.Services.IMsmqReceiverService, ReceiverWebApp.Services.MockMsmqReceiverService>();
-
-// REAL MSMQ MODE (uncomment this)
-builder.Services.AddSingleton<ReceiverWebApp.Services.IMsmqReceiverService, ReceiverWebApp.Services.MsmqReceiverService>();
-```
-
-**Step 3: Build and run on Windows**
-
-```powershell
-.\setup-msmq.ps1  # If not already installed
-dotnet build -c Release
-.\run-applications.ps1
 ```
 
 ---
@@ -155,13 +148,13 @@ curl http://localhost:5002/api/status/health
 
 ## 🔧 Current Configuration
 
-**Mode**: 🧪 **MOCK** (in-memory queue)
+**Mode**: 🪟 **REAL MSMQ** (Windows only)
 
-**To switch to Real MSMQ**: Follow "Switching Between Modes" above
+**To switch to Mock mode**: Follow "Switching Between Modes" above
 
 **File Locations**:
 - Mock implementations: `MockMsmqService.cs`, `MockMsmqReceiverService.cs`
-- Real implementations: `MsmqService.cs.windows`, `MsmqReceiverService.cs.windows`
+- Real implementations: `MsmqService.cs`, `MsmqReceiverService.cs`
 
 ---
 
