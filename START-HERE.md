@@ -71,7 +71,8 @@ dotnet build
 
 | I want to... | Read this file |
 |--------------|----------------|
-| **Test locally on Mac** | [MOCK-VS-REAL-MSMQ.md](MOCK-VS-REAL-MSMQ.md) 🧪 NEW! |
+| **Run as Windows Services** | [WINDOWS-SERVICES.md](WINDOWS-SERVICES.md) 🪟 NEW! |
+| **Test locally on Mac** | [MOCK-VS-REAL-MSMQ.md](MOCK-VS-REAL-MSMQ.md) 🧪 |
 | **Deploy from Mac to Windows** | [DEPLOY-TO-WINDOWS.md](DEPLOY-TO-WINDOWS.md) 🍎⚡ |
 | **Get started quickly (on Windows)** | [QUICK-START.md](QUICK-START.md) ⭐ |
 | **Run on Mac (via Windows VM)** | [MAC-USERS.md](MAC-USERS.md) 🍎 |
