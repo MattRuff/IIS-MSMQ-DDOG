@@ -39,6 +39,7 @@ if ($Uninstall) {
     if ($service) {
         if ($service.Status -eq "Running") {
             Stop-Service -Name $senderServiceName -Force
+            Start-Sleep -Seconds 2
             Write-Host "  [OK] Stopped" -ForegroundColor Green
         }
         sc.exe delete $senderServiceName
@@ -55,12 +56,36 @@ if ($Uninstall) {
     if ($service) {
         if ($service.Status -eq "Running") {
             Stop-Service -Name $receiverServiceName -Force
+            Start-Sleep -Seconds 2
             Write-Host "  [OK] Stopped" -ForegroundColor Green
         }
         sc.exe delete $receiverServiceName
         Write-Host "  [OK] Removed" -ForegroundColor Green
     } else {
         Write-Host "  Receiver service not found (already removed?)" -ForegroundColor Gray
+    }
+    
+    Write-Host ""
+    
+    # Kill any processes still using the ports
+    Write-Host "Checking for processes using ports..." -ForegroundColor Yellow
+    
+    # Check port 8081
+    $port8081 = netstat -ano | Select-String "8081" | Select-String "LISTENING"
+    if ($port8081) {
+        $processId = ($port8081 -split '\s+')[-1]
+        Write-Host "  Killing process $processId on port 8081..." -ForegroundColor Yellow
+        Stop-Process -Id $processId -Force -ErrorAction SilentlyContinue
+        Write-Host "  [OK] Port 8081 freed" -ForegroundColor Green
+    }
+    
+    # Check port 8082
+    $port8082 = netstat -ano | Select-String "8082" | Select-String "LISTENING"
+    if ($port8082) {
+        $processId = ($port8082 -split '\s+')[-1]
+        Write-Host "  Killing process $processId on port 8082..." -ForegroundColor Yellow
+        Stop-Process -Id $processId -Force -ErrorAction SilentlyContinue
+        Write-Host "  [OK] Port 8082 freed" -ForegroundColor Green
     }
     
     Write-Host ""
