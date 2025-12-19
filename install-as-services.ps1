@@ -16,7 +16,7 @@ Write-Host ""
 $isAdmin = ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
 
 if (-not $isAdmin) {
-    Write-Host "❌ ERROR: This script must be run as Administrator!" -ForegroundColor Red
+    Write-Host "[ERROR] This script must be run as Administrator!" -ForegroundColor Red
     Write-Host "Right-click PowerShell and select 'Run as Administrator'" -ForegroundColor Yellow
     exit 1
 }
@@ -39,10 +39,10 @@ if ($Uninstall) {
     if ($service) {
         if ($service.Status -eq "Running") {
             Stop-Service -Name $senderServiceName -Force
-            Write-Host "  ✓ Stopped" -ForegroundColor Green
+            Write-Host "  [OK] Stopped" -ForegroundColor Green
         }
         sc.exe delete $senderServiceName
-        Write-Host "  ✓ Removed" -ForegroundColor Green
+        Write-Host "  [OK] Removed" -ForegroundColor Green
     } else {
         Write-Host "  Sender service not found (already removed?)" -ForegroundColor Gray
     }
@@ -55,17 +55,17 @@ if ($Uninstall) {
     if ($service) {
         if ($service.Status -eq "Running") {
             Stop-Service -Name $receiverServiceName -Force
-            Write-Host "  ✓ Stopped" -ForegroundColor Green
+            Write-Host "  [OK] Stopped" -ForegroundColor Green
         }
         sc.exe delete $receiverServiceName
-        Write-Host "  ✓ Removed" -ForegroundColor Green
+        Write-Host "  [OK] Removed" -ForegroundColor Green
     } else {
         Write-Host "  Receiver service not found (already removed?)" -ForegroundColor Gray
     }
     
     Write-Host ""
     Write-Host "========================================" -ForegroundColor Green
-    Write-Host "✅ Services Uninstalled" -ForegroundColor Green
+    Write-Host "[SUCCESS] Services Uninstalled" -ForegroundColor Green
     Write-Host "========================================" -ForegroundColor Green
     exit 0
 }
@@ -75,22 +75,22 @@ Write-Host "Building applications..." -ForegroundColor Yellow
 dotnet build -c Release --no-restore
 
 if ($LASTEXITCODE -ne 0) {
-    Write-Host "❌ Build failed!" -ForegroundColor Red
+    Write-Host "[ERROR] Build failed!" -ForegroundColor Red
     exit 1
 }
 
-Write-Host "✓ Build successful" -ForegroundColor Green
+Write-Host "[OK] Build successful" -ForegroundColor Green
 Write-Host ""
 
 # Check if executables exist
 if (-not (Test-Path $senderPath)) {
-    Write-Host "❌ Sender executable not found at: $senderPath" -ForegroundColor Red
+    Write-Host "[ERROR] Sender executable not found at: $senderPath" -ForegroundColor Red
     Write-Host "Run 'dotnet build -c Release' first" -ForegroundColor Yellow
     exit 1
 }
 
 if (-not (Test-Path $receiverPath)) {
-    Write-Host "❌ Receiver executable not found at: $receiverPath" -ForegroundColor Red
+    Write-Host "[ERROR] Receiver executable not found at: $receiverPath" -ForegroundColor Red
     Write-Host "Run 'dotnet build -c Release' first" -ForegroundColor Yellow
     exit 1
 }
@@ -106,9 +106,9 @@ sc.exe create $senderServiceName binPath= $senderBinPath start= auto DisplayName
 if ($LASTEXITCODE -eq 0) {
     # Set description
     sc.exe description $senderServiceName "IIS MSMQ Demo - Sender Application (Port 8081)"
-    Write-Host "  ✓ Created" -ForegroundColor Green
+    Write-Host "  [OK] Created" -ForegroundColor Green
 } else {
-    Write-Host "  ❌ Failed to create service" -ForegroundColor Red
+    Write-Host "  [ERROR] Failed to create service" -ForegroundColor Red
     exit 1
 }
 
@@ -122,9 +122,9 @@ sc.exe create $receiverServiceName binPath= $receiverBinPath start= auto Display
 if ($LASTEXITCODE -eq 0) {
     # Set description
     sc.exe description $receiverServiceName "IIS MSMQ Demo - Receiver Application (Port 8082)"
-    Write-Host "  ✓ Created" -ForegroundColor Green
+    Write-Host "  [OK] Created" -ForegroundColor Green
 } else {
-    Write-Host "  ❌ Failed to create service" -ForegroundColor Red
+    Write-Host "  [ERROR] Failed to create service" -ForegroundColor Red
     exit 1
 }
 
@@ -139,9 +139,9 @@ Start-Service -Name $senderServiceName
 Start-Sleep -Seconds 2
 $service = Get-Service -Name $senderServiceName
 if ($service.Status -eq "Running") {
-    Write-Host "  ✓ Running" -ForegroundColor Green
+    Write-Host "  [OK] Running" -ForegroundColor Green
 } else {
-    Write-Host "  ⚠️  Service status: $($service.Status)" -ForegroundColor Yellow
+    Write-Host "  [WARN] Service status: $($service.Status)" -ForegroundColor Yellow
 }
 
 Write-Host ""
@@ -151,14 +151,14 @@ Start-Service -Name $receiverServiceName
 Start-Sleep -Seconds 2
 $service = Get-Service -Name $receiverServiceName
 if ($service.Status -eq "Running") {
-    Write-Host "  ✓ Running" -ForegroundColor Green
+    Write-Host "  [OK] Running" -ForegroundColor Green
 } else {
-    Write-Host "  ⚠️  Service status: $($service.Status)" -ForegroundColor Yellow
+    Write-Host "  [WARN] Service status: $($service.Status)" -ForegroundColor Yellow
 }
 
 Write-Host ""
 Write-Host "========================================" -ForegroundColor Green
-Write-Host "✅ Services Installed and Started!" -ForegroundColor Green
+Write-Host "[SUCCESS] Services Installed and Started!" -ForegroundColor Green
 Write-Host "========================================" -ForegroundColor Green
 Write-Host ""
 Write-Host "Service Details:" -ForegroundColor Cyan
@@ -181,4 +181,5 @@ Write-Host ""
 Write-Host "Test:" -ForegroundColor Yellow
 Write-Host '  curl http://localhost:8081/api/order/test' -ForegroundColor White
 Write-Host ""
+
 
