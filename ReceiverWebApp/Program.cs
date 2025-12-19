@@ -5,8 +5,12 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-// Add MSMQ Service
-builder.Services.AddSingleton<ReceiverWebApp.Services.IMsmqReceiverService, ReceiverWebApp.Services.MsmqReceiverService>();
+// Add MSMQ Service  
+// MOCK MODE (works on Mac/Linux/Windows without MSMQ) - for testing IIS/API
+builder.Services.AddSingleton<ReceiverWebApp.Services.IMsmqReceiverService, ReceiverWebApp.Services.MockMsmqReceiverService>();
+
+// REAL MSMQ MODE (Windows only) - uncomment this line and comment out MockMsmqReceiverService above
+// builder.Services.AddSingleton<ReceiverWebApp.Services.IMsmqReceiverService, ReceiverWebApp.Services.MsmqReceiverService>();
 
 // Add Hosted Service for background processing
 builder.Services.AddHostedService<ReceiverWebApp.Services.MessageProcessorService>();

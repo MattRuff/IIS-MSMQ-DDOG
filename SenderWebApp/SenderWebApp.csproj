@@ -7,8 +7,10 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Experimental.System.Messaging" Version="1.1.0" />
+    <!-- Only include MSMQ package on Windows -->
+    <PackageReference Include="Experimental.System.Messaging" Version="1.1.0" Condition="'$(OS)' == 'Windows_NT'" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="6.5.0" />
   </ItemGroup>
 
 </Project>
