@@ -1,0 +1,208 @@
+{
+  "info": {
+    "name": "IIS MSMQ Demo",
+    "description": "API collection for testing the IIS MSMQ distributed tracing demo",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Sender App",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:5001/",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "5001",
+              "path": [""]
+            }
+          }
+        },
+        {
+          "name": "Order Health",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:5001/api/order/health",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "5001",
+              "path": ["api", "order", "health"]
+            }
+          }
+        },
+        {
+          "name": "Send Test Order",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:5001/api/order/test",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "5001",
+              "path": ["api", "order", "test"]
+            }
+          }
+        },
+        {
+          "name": "Send Custom Order",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"customerName\": \"John Doe\",\n  \"productName\": \"Premium Widget\",\n  \"quantity\": 5,\n  \"totalAmount\": 299.99\n}"
+            },
+            "url": {
+              "raw": "http://localhost:5001/api/order",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "5001",
+              "path": ["api", "order"]
+            }
+          }
+        },
+        {
+          "name": "Send Bulk Orders",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"customerName\": \"Jane Smith\",\n  \"productName\": \"Enterprise License\",\n  \"quantity\": 100,\n  \"totalAmount\": 9999.99\n}"
+            },
+            "url": {
+              "raw": "http://localhost:5001/api/order",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "5001",
+              "path": ["api", "order"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Receiver App",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:5002/",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "5002",
+              "path": [""]
+            }
+          }
+        },
+        {
+          "name": "Status Health",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:5002/api/status/health",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "5002",
+              "path": ["api", "status", "health"]
+            }
+          }
+        },
+        {
+          "name": "Queue Status",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:5002/api/status/queue-status",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "5002",
+              "path": ["api", "status", "queue-status"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Load Testing",
+      "item": [
+        {
+          "name": "Send Order - Iteration",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Response has success flag\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.eql(true);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"customerName\": \"Customer {{$randomInt}}\",\n  \"productName\": \"Product {{$randomInt}}\",\n  \"quantity\": {{$randomInt}},\n  \"totalAmount\": {{$randomPrice}}\n}"
+            },
+            "url": {
+              "raw": "http://localhost:5001/api/order",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "5001",
+              "path": ["api", "order"]
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "sender_url",
+      "value": "http://localhost:5001",
+      "type": "string"
+    },
+    {
+      "key": "receiver_url",
+      "value": "http://localhost:5002",
+      "type": "string"
+    }
+  ]
+}
+
