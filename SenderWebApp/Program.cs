@@ -6,11 +6,12 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 // Add MSMQ Service
-// MOCK MODE (works on Mac/Linux/Windows without MSMQ) - for testing IIS/API
-builder.Services.AddSingleton<SenderWebApp.Services.IMsmqService, SenderWebApp.Services.MockMsmqService>();
+// REAL MSMQ MODE (Windows only) - Default for customer demos
+builder.Services.AddSingleton<SenderWebApp.Services.IMsmqService, SenderWebApp.Services.MsmqService>();
 
-// REAL MSMQ MODE (Windows only) - uncomment this line and comment out MockMsmqService above
-// builder.Services.AddSingleton<SenderWebApp.Services.IMsmqService, SenderWebApp.Services.MsmqService>();
+// MOCK MODE (works on Mac/Linux/Windows without MSMQ) - for testing IIS/API only
+// Uncomment this and comment out MsmqService above to use Mock mode
+// builder.Services.AddSingleton<SenderWebApp.Services.IMsmqService, SenderWebApp.Services.MockMsmqService>();
 
 var app = builder.Build();
 
