@@ -14,7 +14,7 @@ Write-Host ""
 $isAdmin = ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
 
 if (-not $isAdmin) {
-    Write-Host "⚠️  WARNING: Not running as Administrator" -ForegroundColor Yellow
+    Write-Host "[WARN] Not running as Administrator" -ForegroundColor Yellow
     Write-Host "MSMQ setup requires admin privileges" -ForegroundColor Yellow
     Write-Host ""
 }
@@ -29,7 +29,7 @@ if (-not $SkipMsmqSetup) {
     } else {
         .\setup-msmq.ps1
         if ($LASTEXITCODE -ne 0) {
-            Write-Host "❌ MSMQ setup failed" -ForegroundColor Red
+            Write-Host "[ERROR] MSMQ setup failed" -ForegroundColor Red
             exit 1
         }
     }
@@ -44,12 +44,12 @@ Write-Host "STEP 2: Checking .NET SDK..." -ForegroundColor Yellow
 $dotnetVersion = dotnet --version 2>$null
 
 if (-not $dotnetVersion) {
-    Write-Host "❌ .NET SDK not found!" -ForegroundColor Red
+    Write-Host "[ERROR] .NET SDK not found!" -ForegroundColor Red
     Write-Host "Download from: https://dotnet.microsoft.com/download/dotnet/8.0" -ForegroundColor Yellow
     exit 1
 }
 
-Write-Host "✓ .NET SDK found: $dotnetVersion" -ForegroundColor Green
+Write-Host "[OK] .NET SDK found: $dotnetVersion" -ForegroundColor Green
 Write-Host ""
 
 # Step 3: Restore dependencies
@@ -57,11 +57,11 @@ Write-Host "STEP 3: Restoring NuGet packages..." -ForegroundColor Yellow
 dotnet restore --nologo
 
 if ($LASTEXITCODE -ne 0) {
-    Write-Host "❌ Restore failed" -ForegroundColor Red
+    Write-Host "[ERROR] Restore failed" -ForegroundColor Red
     exit 1
 }
 
-Write-Host "✓ Packages restored" -ForegroundColor Green
+Write-Host "[OK] Packages restored" -ForegroundColor Green
 Write-Host ""
 
 # Step 4: Build solution
@@ -69,11 +69,11 @@ Write-Host "STEP 4: Building solution..." -ForegroundColor Yellow
 dotnet build -c Release --no-restore --nologo -v minimal
 
 if ($LASTEXITCODE -ne 0) {
-    Write-Host "❌ Build failed" -ForegroundColor Red
+    Write-Host "[ERROR] Build failed" -ForegroundColor Red
     exit 1
 }
 
-Write-Host "✓ Build successful" -ForegroundColor Green
+Write-Host "[OK] Build successful" -ForegroundColor Green
 Write-Host ""
 
 # Step 5: Run applications with Datadog tracing
@@ -111,7 +111,7 @@ Write-Host ''
 "@
 
 # Start Sender with Datadog
-Write-Host "  → Starting Sender App (Port 8081) with Datadog..." -ForegroundColor Cyan
+Write-Host "  -> Starting Sender App (Port 8081) with Datadog..." -ForegroundColor Cyan
 $senderCommand = $datadogSetup + @"
 Write-Host 'Starting Sender Application...' -ForegroundColor Yellow
 cd '$scriptPath\SenderWebApp\bin\Release\net48'
@@ -122,7 +122,7 @@ Start-Process powershell -ArgumentList "-NoExit", "-Command", $senderCommand
 Start-Sleep -Seconds 3
 
 # Start Receiver with Datadog
-Write-Host "  → Starting Receiver App (Port 8082) with Datadog..." -ForegroundColor Cyan
+Write-Host "  -> Starting Receiver App (Port 8082) with Datadog..." -ForegroundColor Cyan
 $receiverCommand = $datadogSetup + @"
 Write-Host 'Starting Receiver Application...' -ForegroundColor Yellow
 cd '$scriptPath\ReceiverWebApp\bin\Release\net48'
@@ -132,7 +132,7 @@ Start-Process powershell -ArgumentList "-NoExit", "-Command", $receiverCommand
 
 Write-Host ""
 Write-Host "========================================" -ForegroundColor Green
-Write-Host "✅ Setup Complete!" -ForegroundColor Green
+Write-Host "[SUCCESS] Setup Complete!" -ForegroundColor Green
 Write-Host "========================================" -ForegroundColor Green
 Write-Host ""
 Write-Host "Applications:" -ForegroundColor Yellow
