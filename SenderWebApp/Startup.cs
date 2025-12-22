@@ -46,10 +46,8 @@ namespace SenderWebApp
                 c.SwaggerEndpoint("/swagger/v1/swagger.json", "Sender API V1");
             });
 
-            app.UseMvc();
-            
-            // Add a simple health check endpoint with version
-            app.Map("/", appBuilder =>
+            // Add a simple health check endpoint with version BEFORE UseMvc
+            app.MapWhen(context => context.Request.Path == "/", appBuilder =>
             {
                 appBuilder.Run(async context =>
                 {
@@ -69,6 +67,8 @@ namespace SenderWebApp
                     await context.Response.WriteAsync(JsonConvert.SerializeObject(response));
                 });
             });
+
+            app.UseMvc();
         }
     }
 }

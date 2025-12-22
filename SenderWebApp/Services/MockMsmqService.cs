@@ -11,7 +11,7 @@ namespace SenderWebApp.Services
     public class MockMsmqService : IMsmqService
     {
         private readonly ILogger<MockMsmqService> _logger;
-        private static readonly ConcurrentQueue<OrderMessage> _mockQueue = new();
+        private static readonly ConcurrentQueue<OrderMessage> _mockQueue = new ConcurrentQueue<OrderMessage>();
 
         public MockMsmqService(ILogger<MockMsmqService> logger)
         {
