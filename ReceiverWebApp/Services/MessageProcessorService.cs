@@ -31,11 +31,14 @@ namespace ReceiverWebApp.Services
                     if (message != null)
                     {
                         await ProcessOrder(message);
+                        // Small delay between messages to reduce handle churn
+                        await Task.Delay(TimeSpan.FromMilliseconds(500), stoppingToken);
                     }
                     else
                     {
-                        // No messages available, wait a bit before checking again
-                        await Task.Delay(TimeSpan.FromSeconds(2), stoppingToken);
+                        // No messages available, wait longer to reduce handle churn
+                        // Experimental.System.Messaging has handle management issues
+                        await Task.Delay(TimeSpan.FromSeconds(3), stoppingToken);
                     }
                 }
                 catch (OperationCanceledException)
@@ -49,7 +52,8 @@ namespace ReceiverWebApp.Services
                     
                     try
                     {
-                        await Task.Delay(TimeSpan.FromSeconds(5), stoppingToken);
+                        // Longer delay after errors to allow system recovery
+                        await Task.Delay(TimeSpan.FromSeconds(10), stoppingToken);
                     }
                     catch (OperationCanceledException)
                     {

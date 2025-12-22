@@ -18,49 +18,74 @@ namespace ReceiverWebApp.Services
 
         public OrderMessage? ReceiveMessage()
         {
-            MessageQueue? tempQueue = null;
-            
-            try
+            // Retry up to 3 times to work around Experimental.System.Messaging bugs
+            for (int attempt = 1; attempt <= 3; attempt++)
             {
-                if (!MessageQueue.Exists(_queuePath))
-                {
-                    _logger.LogWarning($"Queue does not exist: {_queuePath}");
-                    return null;
-                }
-
-                // Create a fresh queue instance for each receive operation
-                // This avoids the handle corruption issue in Experimental.System.Messaging
-                tempQueue = new MessageQueue(_queuePath);
-                tempQueue.Formatter = new XmlMessageFormatter(new Type[] { typeof(string) });
-
-                // Receive directly with short timeout - Peek() has bugs in Experimental.System.Messaging
-                var message = tempQueue.Receive(TimeSpan.FromMilliseconds(500));
+                MessageQueue? tempQueue = null;
                 
-                if (message.Body is string jsonMessage)
-                {
-                    var order = JsonConvert.DeserializeObject<OrderMessage>(jsonMessage);
-                    _logger.LogInformation($"Message received successfully. OrderId: {order?.OrderId}");
-                    return order;
-                }
-            }
-            catch (MessageQueueException mqex) when (mqex.MessageQueueErrorCode == MessageQueueErrorCode.IOTimeout)
-            {
-                // No messages available - this is normal
-                return null;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error receiving message from queue");
-                return null;
-            }
-            finally
-            {
-                // Always dispose the temp queue
                 try
                 {
-                    tempQueue?.Dispose();
+                    if (!MessageQueue.Exists(_queuePath))
+                    {
+                        _logger.LogWarning($"Queue does not exist: {_queuePath}");
+                        return null;
+                    }
+
+                    // Create a fresh queue instance for each receive operation
+                    // This avoids the handle corruption issue in Experimental.System.Messaging
+                    tempQueue = new MessageQueue(_queuePath);
+                    tempQueue.Formatter = new XmlMessageFormatter(new Type[] { typeof(string) });
+
+                    // Receive directly with short timeout
+                    var message = tempQueue.Receive(TimeSpan.FromMilliseconds(500));
+                    
+                    if (message.Body is string jsonMessage)
+                    {
+                        var order = JsonConvert.DeserializeObject<OrderMessage>(jsonMessage);
+                        _logger.LogInformation($"Message received successfully. OrderId: {order?.OrderId}");
+                        return order;
+                    }
                 }
-                catch { }
+                catch (MessageQueueException mqex) when (mqex.MessageQueueErrorCode == MessageQueueErrorCode.IOTimeout)
+                {
+                    // No messages available - this is normal
+                    return null;
+                }
+                catch (MessageQueueException mqex) when (mqex.MessageQueueErrorCode == MessageQueueErrorCode.InvalidHandle || 
+                                                          mqex.ErrorCode == -2147467259) // 0x80004005
+                {
+                    // Handle corruption - very common with Experimental.System.Messaging
+                    if (attempt < 3)
+                    {
+                        _logger.LogWarning($"Queue handle error on attempt {attempt}, retrying...");
+                        Thread.Sleep(100 * attempt); // Exponential backoff
+                        continue;
+                    }
+                    else
+                    {
+                        _logger.LogError(mqex, "Queue handle error after 3 attempts");
+                        return null;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, $"Error receiving message from queue (attempt {attempt})");
+                    if (attempt < 3)
+                    {
+                        Thread.Sleep(100 * attempt);
+                        continue;
+                    }
+                    return null;
+                }
+                finally
+                {
+                    // Always dispose the temp queue
+                    try
+                    {
+                        tempQueue?.Dispose();
+                    }
+                    catch { }
+                }
             }
 
             return null;
