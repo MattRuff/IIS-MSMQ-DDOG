@@ -83,3 +83,7 @@ dd-dotnet/
 # Zip files
 *.zip
 
+# Application logs
+logs/
+*.json.log
+

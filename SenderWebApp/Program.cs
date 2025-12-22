@@ -17,6 +17,12 @@ Log.Logger = new LoggerConfiguration()
     .Enrich.WithProperty("dd.env", Environment.GetEnvironmentVariable("DD_ENV") ?? "development")
     .Enrich.With<SenderWebApp.DatadogExceptionEnricher>()
     .WriteTo.Console(new CompactJsonFormatter())
+    .WriteTo.File(
+        new CompactJsonFormatter(),
+        path: "logs/sender-.json",
+        rollingInterval: RollingInterval.Day,
+        retainedFileCountLimit: 7,
+        buffered: false)
     .CreateLogger();
 
 try

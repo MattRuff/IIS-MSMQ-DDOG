@@ -126,11 +126,16 @@ Write-Host ""
 # Install Sender Service
 Write-Host "Installing Sender Service..." -ForegroundColor Yellow
 $senderBinPath = "`"$senderPath`""
-sc.exe create $senderServiceName binPath= $senderBinPath start= auto DisplayName= "MSMQ Sender Service"
+sc.exe create $senderServiceName binPath= $senderBinPath start= auto DisplayName= "MSMQ Sender Service" obj= "LocalSystem"
 
 if ($LASTEXITCODE -eq 0) {
     # Set description
     sc.exe description $senderServiceName "IIS MSMQ Demo - Sender Application (Port 8081)"
+    
+    # Grant MSMQ permissions
+    Write-Host "  Configuring MSMQ permissions..." -ForegroundColor Gray
+    sc.exe privs $senderServiceName SeChangeNotifyPrivilege/SeImpersonatePrivilege/SeCreateGlobalPrivilege
+    
     Write-Host "  [OK] Created" -ForegroundColor Green
 } else {
     Write-Host "  [ERROR] Failed to create service" -ForegroundColor Red
@@ -142,11 +147,15 @@ Write-Host ""
 # Install Receiver Service
 Write-Host "Installing Receiver Service..." -ForegroundColor Yellow
 $receiverBinPath = "`"$receiverPath`""
-sc.exe create $receiverServiceName binPath= $receiverBinPath start= auto DisplayName= "MSMQ Receiver Service"
+sc.exe create $receiverServiceName binPath= $receiverBinPath start= auto DisplayName= "MSMQ Receiver Service" obj= "LocalSystem"
 
 if ($LASTEXITCODE -eq 0) {
     # Set description
     sc.exe description $receiverServiceName "IIS MSMQ Demo - Receiver Application (Port 8082)"
+    
+    # Grant MSMQ permissions
+    Write-Host "  Configuring MSMQ permissions..." -ForegroundColor Gray
+    sc.exe privs $receiverServiceName SeChangeNotifyPrivilege/SeImpersonatePrivilege/SeCreateGlobalPrivilege
     Write-Host "  [OK] Created" -ForegroundColor Green
 } else {
     Write-Host "  [ERROR] Failed to create service" -ForegroundColor Red
