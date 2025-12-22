@@ -12,6 +12,7 @@ public static class NativeMsmq
     private const int MQ_OK = 0;
     private const int MQ_ERROR_IO_TIMEOUT = unchecked((int)0xC00E0020);
     private const int MQ_ERROR_QUEUE_NOT_FOUND = unchecked((int)0xC00E0003);
+    private const int MQ_ERROR_INSUFFICIENT_PROPERTIES = unchecked((int)0xC00E0025);
     
     private const int MQ_RECEIVE_ACCESS = 1;
     private const int MQ_DENY_NONE = 0;
@@ -91,24 +92,37 @@ public static class NativeMsmq
         
         try
         {
-            // Convert queue path to format name
-            var formatNameBuilder = new StringBuilder(256);
-            int formatNameLength = formatNameBuilder.Capacity;
-            int hr = MQPathNameToFormatName(queuePath, formatNameBuilder, ref formatNameLength);
-            
-            if (hr != MQ_OK)
+            // For private queues, use direct format name
+            // Convert .\private$\OrderQueue to DIRECT=OS:.\private$\OrderQueue
+            string formatName;
+            if (queuePath.StartsWith(@".\private$\"))
             {
-                if (hr == MQ_ERROR_QUEUE_NOT_FOUND)
-                    return null;
-                throw new Exception($"MQPathNameToFormatName failed: 0x{hr:X}");
+                // Direct format name for local private queues
+                string machineName = Environment.MachineName;
+                string queueName = queuePath.Substring(@".\private$\".Length);
+                formatName = $"DIRECT=OS:{machineName}\\private$\\{queueName}";
+            }
+            else
+            {
+                // Try to convert path to format name
+                var formatNameBuilder = new StringBuilder(256);
+                int formatNameLength = formatNameBuilder.Capacity;
+                int hr = MQPathNameToFormatName(queuePath, formatNameBuilder, ref formatNameLength);
+                
+                if (hr != MQ_OK)
+                {
+                    if (hr == MQ_ERROR_QUEUE_NOT_FOUND)
+                        return null;
+                    throw new Exception($"MQPathNameToFormatName failed: 0x{hr:X}");
+                }
+                
+                formatName = formatNameBuilder.ToString();
             }
             
-            string formatName = formatNameBuilder.ToString();
-            
             // Open the queue
-            hr = MQOpenQueue(formatName, MQ_RECEIVE_ACCESS, MQ_DENY_NONE, out hQueue);
-            if (hr != MQ_OK)
-                throw new Exception($"MQOpenQueue failed: 0x{hr:X}");
+            int hr2 = MQOpenQueue(formatName, MQ_RECEIVE_ACCESS, MQ_DENY_NONE, out hQueue);
+            if (hr2 != MQ_OK)
+                throw new Exception($"MQOpenQueue failed: 0x{hr2:X} for format name: {formatName}");
             
             // Allocate buffers for message body and label
             const int maxBodySize = 4194304; // 4MB max
