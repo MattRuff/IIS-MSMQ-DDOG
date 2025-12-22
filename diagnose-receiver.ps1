@@ -18,7 +18,7 @@ try {
 
 # 3. Check log file if it exists
 Write-Host "`n3. Latest Log File Entries:" -ForegroundColor Yellow
-$logPath = "C:\Users\matthew.ruyffelaert\Documents\IIS-MSMQ-Lab\IIS-MSMQ-DDOG\ReceiverWebApp\bin\Release\net8.0\logs"
+$logPath = "C:\Users\matthew.ruyffelaert\Documents\IIS-MSMQ-Lab\IIS-MSMQ-DDOG\ReceiverWebApp\bin\Release\net48\logs"
 if (Test-Path $logPath) {
     $latestLog = Get-ChildItem $logPath -Filter "*.log" | Sort-Object LastWriteTime -Descending | Select-Object -First 1
     if ($latestLog) {

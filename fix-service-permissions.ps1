@@ -12,7 +12,7 @@ if (-not $isAdmin) {
 }
 
 $receiverDir = "C:\Users\matthew.ruyffelaert\Documents\IIS-MSMQ-Lab\IIS-MSMQ-DDOG\ReceiverWebApp"
-$receiverBinDir = "$receiverDir\bin\Release\net8.0"
+$receiverBinDir = "$receiverDir\bin\Release\net48"
 $logDir = "$receiverBinDir\logs"
 
 Write-Host "`nGranting NetworkService permissions..." -ForegroundColor Yellow

@@ -22,8 +22,8 @@ if (-not $isAdmin) {
 }
 
 $scriptPath = Split-Path -Parent $MyInvocation.MyCommand.Path
-$senderPath = Join-Path $scriptPath "SenderWebApp\bin\Release\net8.0\SenderWebApp.exe"
-$receiverPath = Join-Path $scriptPath "ReceiverWebApp\bin\Release\net8.0\ReceiverWebApp.exe"
+$senderPath = Join-Path $scriptPath "SenderWebApp\bin\Release\net48\SenderWebApp.exe"
+$receiverPath = Join-Path $scriptPath "ReceiverWebApp\bin\Release\net48\ReceiverWebApp.exe"
 
 # Service names
 $senderServiceName = "MsmqSenderService"

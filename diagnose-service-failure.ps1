@@ -45,7 +45,7 @@ if ($service) {
 
 # 4. Check if executable exists and is accessible
 Write-Host "`n4. Executable Check:" -ForegroundColor Yellow
-$exePath = "C:\Users\matthew.ruyffelaert\Documents\IIS-MSMQ-Lab\IIS-MSMQ-DDOG\ReceiverWebApp\bin\Release\net8.0\ReceiverWebApp.exe"
+$exePath = "C:\Users\matthew.ruyffelaert\Documents\IIS-MSMQ-Lab\IIS-MSMQ-DDOG\ReceiverWebApp\bin\Release\net48\ReceiverWebApp.exe"
 if (Test-Path $exePath) {
     Write-Host "  Executable exists: YES" -ForegroundColor Green
     $fileInfo = Get-Item $exePath

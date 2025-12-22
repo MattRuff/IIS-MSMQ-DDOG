@@ -87,7 +87,7 @@ try {
 Write-Host "`n7. Checking Logs for Order $testOrderId..." -ForegroundColor Yellow
 
 # Check sender logs
-$senderLogPath = "C:\Users\matthew.ruyffelaert\Documents\IIS-MSMQ-Lab\IIS-MSMQ-DDOG\SenderWebApp\bin\Release\net8.0\logs"
+$senderLogPath = "C:\Users\matthew.ruyffelaert\Documents\IIS-MSMQ-Lab\IIS-MSMQ-DDOG\SenderWebApp\bin\Release\net48\logs"
 if (Test-Path $senderLogPath) {
     $latestSenderLog = Get-ChildItem $senderLogPath -Filter "*.json" | Sort-Object LastWriteTime -Descending | Select-Object -First 1
     if ($latestSenderLog) {
@@ -101,7 +101,7 @@ if (Test-Path $senderLogPath) {
 }
 
 # Check receiver logs
-$receiverLogPath = "C:\Users\matthew.ruyffelaert\Documents\IIS-MSMQ-Lab\IIS-MSMQ-DDOG\ReceiverWebApp\bin\Release\net8.0\logs"
+$receiverLogPath = "C:\Users\matthew.ruyffelaert\Documents\IIS-MSMQ-Lab\IIS-MSMQ-DDOG\ReceiverWebApp\bin\Release\net48\logs"
 if (Test-Path $receiverLogPath) {
     $latestReceiverLog = Get-ChildItem $receiverLogPath -Filter "*.json" | Sort-Object LastWriteTime -Descending | Select-Object -First 1
     if ($latestReceiverLog) {
