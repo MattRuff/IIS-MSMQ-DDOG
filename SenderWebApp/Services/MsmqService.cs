@@ -49,7 +49,7 @@ namespace SenderWebApp.Services
             using (var scope = Tracer.Instance.StartActive("msmq.send"))
             {
                 var span = scope.Span;
-                span.Type = SpanTypes.MessageBroker;
+                span.Type = "queue"; // Use string instead of SpanTypes constant for .NET Framework compatibility
                 span.ResourceName = "send.order";
                 span.SetTag("order.id", message.OrderId);
                 span.SetTag("order.customer", message.CustomerName);

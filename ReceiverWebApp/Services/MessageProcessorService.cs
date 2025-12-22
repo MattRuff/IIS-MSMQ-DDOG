@@ -91,7 +91,7 @@ namespace ReceiverWebApp.Services
             using (var scope = Tracer.Instance.StartActive("msmq.process"))
             {
                 var span = scope.Span;
-                span.Type = SpanTypes.MessageBroker;
+                span.Type = "queue"; // Use string instead of SpanTypes constant for .NET Framework compatibility
                 span.ResourceName = "process.order";
                 span.SetTag("order.id", order.OrderId);
                 span.SetTag("order.customer", order.CustomerName);

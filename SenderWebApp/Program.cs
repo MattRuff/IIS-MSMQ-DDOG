@@ -1,6 +1,10 @@
+using System;
+using System.IO;
+using System.Linq;
+using System.Reflection;
+using Microsoft.AspNetCore.Builder;
 using Serilog;
 using Serilog.Formatting.Compact;
-using System.Reflection;
 
 // Get git commit hash from assembly metadata
 var gitCommitHash = Assembly.GetExecutingAssembly()
