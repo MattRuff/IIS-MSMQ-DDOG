@@ -7,6 +7,10 @@ var gitCommitHash = Assembly.GetExecutingAssembly()
     .GetCustomAttributes<AssemblyMetadataAttribute>()
     .FirstOrDefault(a => a.Key == "GitCommitHash")?.Value ?? "unknown";
 
+// Get application base directory for logs (works for both console and service)
+var appDirectory = AppContext.BaseDirectory;
+var logPath = Path.Combine(appDirectory, "logs", "receiver-.json");
+
 // Configure Serilog with JSON formatting and Datadog error fields
 Log.Logger = new LoggerConfiguration()
     .Enrich.FromLogContext()
@@ -19,7 +23,7 @@ Log.Logger = new LoggerConfiguration()
     .WriteTo.Console(new CompactJsonFormatter())
     .WriteTo.File(
         new CompactJsonFormatter(),
-        path: "logs/receiver-.json",
+        path: logPath,
         rollingInterval: RollingInterval.Day,
         retainedFileCountLimit: 7,
         buffered: false)
