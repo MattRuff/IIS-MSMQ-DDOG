@@ -34,7 +34,7 @@ namespace SenderWebApp.Services
 
         public static int GetQueueCount() => _mockQueue.Count;
         
-        public static bool TryDequeue(out OrderMessage? message)
+        public static bool TryDequeue(out OrderMessage message)
         {
             return _mockQueue.TryDequeue(out message);
         }

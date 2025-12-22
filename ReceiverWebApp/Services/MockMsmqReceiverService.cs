@@ -24,7 +24,7 @@ namespace ReceiverWebApp.Services
             _logger.LogInformation("[MOCK] Start() called - no-op for mock service");
         }
 
-        public OrderMessage? ReceiveMessage()
+        public OrderMessage ReceiveMessage()
         {
             if (_mockQueue.TryDequeue(out var message))
             {

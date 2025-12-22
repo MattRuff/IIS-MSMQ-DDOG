@@ -28,7 +28,7 @@ namespace ReceiverWebApp.Services
         private readonly Queue<OrderMessage> _receivedMessages = new Queue<OrderMessage>();
         private readonly object _messagesLock = new object();
         
-        private MessageQueue? _queue;
+        private MessageQueue _queue;
         private bool _isStarted = false;
 
         public MsmqReceiverService(IConfiguration configuration, ILogger<MsmqReceiverService> _logger)
@@ -136,7 +136,7 @@ namespace ReceiverWebApp.Services
             }
         }
 
-        public OrderMessage? ReceiveMessage()
+        public OrderMessage ReceiveMessage()
         {
             // This now pulls from the in-memory queue, NOT from MSMQ directly
             lock (_messagesLock)
