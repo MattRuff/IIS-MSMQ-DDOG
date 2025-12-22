@@ -15,7 +15,8 @@ namespace ReceiverWebApp
         {
             // Get git commit hash from assembly metadata
             var gitCommitHash = Assembly.GetExecutingAssembly()
-                .GetCustomAttributes<AssemblyMetadataAttribute>()
+                .GetCustomAttributes(typeof(AssemblyMetadataAttribute), false)
+                .Cast<AssemblyMetadataAttribute>()
                 .FirstOrDefault(a => a.Key == "GitCommitHash")?.Value ?? "unknown";
 
             // Get application base directory for logs (works for both console and service)
@@ -70,7 +71,6 @@ namespace ReceiverWebApp
             WebHost.CreateDefaultBuilder(args)
                 .UseUrls("http://localhost:8082")
                 .UseSerilog()
-                .UseStartup<Startup>()
-                .UseWindowsService(); // Enable Windows Service support
+                .UseStartup<Startup>();
     }
 }

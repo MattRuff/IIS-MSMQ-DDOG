@@ -52,7 +52,8 @@ namespace SenderWebApp
                 appBuilder.Run(async context =>
                 {
                     var gitCommitHash = System.Reflection.Assembly.GetExecutingAssembly()
-                        .GetCustomAttributes<System.Reflection.AssemblyMetadataAttribute>()
+                        .GetCustomAttributes(typeof(System.Reflection.AssemblyMetadataAttribute), false)
+                        .Cast<System.Reflection.AssemblyMetadataAttribute>()
                         .FirstOrDefault(a => a.Key == "GitCommitHash")?.Value ?? "unknown";
                     
                     var response = new
