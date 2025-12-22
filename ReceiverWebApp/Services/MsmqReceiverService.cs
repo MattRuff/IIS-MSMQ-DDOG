@@ -4,68 +4,54 @@ using ReceiverWebApp.Models;
 
 namespace ReceiverWebApp.Services
 {
-    public class MsmqReceiverService : IMsmqReceiverService, IDisposable
+    public class MsmqReceiverService : IMsmqReceiverService
     {
         private readonly string _queuePath;
         private readonly ILogger<MsmqReceiverService> _logger;
-        private MessageQueue? _queue;
-        private readonly object _queueLock = new object();
 
         public MsmqReceiverService(IConfiguration configuration, ILogger<MsmqReceiverService> logger)
         {
             _queuePath = configuration["MSMQ:QueuePath"] ?? @".\private$\OrderQueue";
             _logger = logger;
-            InitializeQueue();
+            _logger.LogInformation($"MsmqReceiverService initialized with queue path: {_queuePath}");
         }
 
-        private void InitializeQueue()
+        public OrderMessage? ReceiveMessage()
         {
+            MessageQueue? tempQueue = null;
+            
             try
             {
                 if (!MessageQueue.Exists(_queuePath))
                 {
                     _logger.LogWarning($"Queue does not exist: {_queuePath}");
-                    return;
+                    return null;
                 }
 
-                lock (_queueLock)
+                // Create a fresh queue instance for each receive operation
+                // This avoids the handle corruption issue in Experimental.System.Messaging
+                tempQueue = new MessageQueue(_queuePath);
+                tempQueue.Formatter = new XmlMessageFormatter(new Type[] { typeof(string) });
+
+                // Try to peek first to see if there are messages
+                try
                 {
-                    _queue = new MessageQueue(_queuePath);
-                    _queue.Formatter = new XmlMessageFormatter(new Type[] { typeof(string) });
-                    _logger.LogInformation($"Queue initialized successfully: {_queuePath}");
+                    tempQueue.Peek(TimeSpan.FromMilliseconds(100));
                 }
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error initializing queue");
-            }
-        }
-
-        public OrderMessage? ReceiveMessage()
-        {
-            try
-            {
-                lock (_queueLock)
+                catch (MessageQueueException peekEx) when (peekEx.MessageQueueErrorCode == MessageQueueErrorCode.IOTimeout)
                 {
-                    if (_queue == null)
-                    {
-                        _logger.LogWarning("Queue not initialized, attempting to initialize...");
-                        InitializeQueue();
-                        if (_queue == null)
-                        {
-                            return null;
-                        }
-                    }
+                    // No messages available
+                    return null;
+                }
 
-                    // Set timeout to 1 second to avoid blocking indefinitely
-                    var message = _queue.Receive(TimeSpan.FromSeconds(1));
-                    
-                    if (message.Body is string jsonMessage)
-                    {
-                        var order = JsonConvert.DeserializeObject<OrderMessage>(jsonMessage);
-                        _logger.LogInformation($"Message received successfully. OrderId: {order?.OrderId}");
-                        return order;
-                    }
+                // If peek succeeded, receive the message
+                var message = tempQueue.Receive(TimeSpan.FromSeconds(1));
+                
+                if (message.Body is string jsonMessage)
+                {
+                    var order = JsonConvert.DeserializeObject<OrderMessage>(jsonMessage);
+                    _logger.LogInformation($"Message received successfully. OrderId: {order?.OrderId}");
+                    return order;
                 }
             }
             catch (MessageQueueException mqex) when (mqex.MessageQueueErrorCode == MessageQueueErrorCode.IOTimeout)
@@ -75,22 +61,17 @@ namespace ReceiverWebApp.Services
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error receiving message from queue. Reinitializing queue...");
-                
-                // Try to recover by reinitializing the queue
-                lock (_queueLock)
-                {
-                    try
-                    {
-                        _queue?.Dispose();
-                        _queue = null;
-                    }
-                    catch { }
-                    
-                    InitializeQueue();
-                }
-                
+                _logger.LogError(ex, "Error receiving message from queue");
                 return null;
+            }
+            finally
+            {
+                // Always dispose the temp queue
+                try
+                {
+                    tempQueue?.Dispose();
+                }
+                catch { }
             }
 
             return null;
@@ -111,6 +92,8 @@ namespace ReceiverWebApp.Services
 
         public int GetMessageCount()
         {
+            MessageQueue? tempQueue = null;
+            
             try
             {
                 if (!MessageQueue.Exists(_queuePath))
@@ -118,37 +101,21 @@ namespace ReceiverWebApp.Services
                     return 0;
                 }
 
-                lock (_queueLock)
-                {
-                    if (_queue == null)
-                    {
-                        return 0;
-                    }
-                    
-                    return _queue.GetAllMessages().Length;
-                }
+                tempQueue = new MessageQueue(_queuePath);
+                return tempQueue.GetAllMessages().Length;
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error getting message count");
                 return 0;
             }
-        }
-
-        public void Dispose()
-        {
-            lock (_queueLock)
+            finally
             {
                 try
                 {
-                    _queue?.Dispose();
-                    _queue = null;
-                    _logger.LogInformation("Queue disposed successfully");
+                    tempQueue?.Dispose();
                 }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex, "Error disposing queue");
-                }
+                catch { }
             }
         }
     }
