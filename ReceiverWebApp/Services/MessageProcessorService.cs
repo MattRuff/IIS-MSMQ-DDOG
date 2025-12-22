@@ -20,12 +20,27 @@ namespace ReceiverWebApp.Services
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
-            _logger.LogInformation("Message Processor Service started");
+            _logger.LogInformation("Message Processor Service starting...");
+
+            try
+            {
+                // Start the receiver (event-driven for real MSMQ, no-op for mock)
+                _msmqReceiverService.Start();
+                _logger.LogInformation("MSMQ receiver started");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to start MSMQ receiver - service cannot function");
+                return;
+            }
+
+            _logger.LogInformation("Message Processor Service ready, monitoring in-memory queue...");
 
             while (!stoppingToken.IsCancellationRequested)
             {
                 try
                 {
+                    // Pull from in-memory queue (filled by MSMQ events)
                     var message = _msmqReceiverService.ReceiveMessage();
 
                     if (message != null)
@@ -34,8 +49,8 @@ namespace ReceiverWebApp.Services
                     }
                     else
                     {
-                        // No messages available, wait before checking again
-                        await Task.Delay(TimeSpan.FromSeconds(2), stoppingToken);
+                        // No messages in buffer, check again soon
+                        await Task.Delay(TimeSpan.FromMilliseconds(500), stoppingToken);
                     }
                 }
                 catch (OperationCanceledException)
