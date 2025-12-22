@@ -4,7 +4,16 @@
     <TargetFramework>net8.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+    <!-- Capture git SHA at build time -->
+    <GitCommitHash Condition="'$(GitCommitHash)' == ''">$([System.DateTime]::UtcNow.ToString(yyyyMMddHHmmss))</GitCommitHash>
   </PropertyGroup>
+
+  <Target Name="SetGitCommitHash" BeforeTargets="BeforeBuild">
+    <Exec Command="git rev-parse --short HEAD" ConsoleToMSBuild="true" IgnoreExitCode="true" StandardOutputImportance="low">
+      <Output TaskParameter="ConsoleOutput" PropertyName="GitCommitHash" />
+    </Exec>
+    <Message Importance="high" Text="Building with version: $(GitCommitHash)" />
+  </Target>
 
   <ItemGroup>
     <!-- Only include MSMQ package on Windows -->
@@ -12,6 +21,16 @@
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.5.0" />
     <PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices" Version="8.0.0" />
+    <PackageReference Include="Serilog.AspNetCore" Version="8.0.0" />
+    <PackageReference Include="Serilog.Sinks.Console" Version="5.0.0" />
+    <PackageReference Include="Serilog.Formatting.Compact" Version="2.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <AssemblyAttribute Include="System.Reflection.AssemblyMetadataAttribute">
+      <_Parameter1>GitCommitHash</_Parameter1>
+      <_Parameter2>$(GitCommitHash)</_Parameter2>
+    </AssemblyAttribute>
   </ItemGroup>
 
 </Project>

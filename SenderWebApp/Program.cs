@@ -1,37 +1,74 @@
-var builder = WebApplication.CreateBuilder(args);
+using Serilog;
+using Serilog.Formatting.Compact;
+using System.Reflection;
 
-// Configure for Windows Service support
-builder.Host.UseWindowsService();
+// Get git commit hash from assembly metadata
+var gitCommitHash = Assembly.GetExecutingAssembly()
+    .GetCustomAttributes<AssemblyMetadataAttribute>()
+    .FirstOrDefault(a => a.Key == "GitCommitHash")?.Value ?? "unknown";
 
-// Add services to the container.
-builder.Services.AddControllers();
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+// Configure Serilog with JSON formatting
+Log.Logger = new LoggerConfiguration()
+    .Enrich.FromLogContext()
+    .Enrich.WithProperty("service", "SenderWebApp")
+    .Enrich.WithProperty("version", gitCommitHash)
+    .Enrich.WithProperty("dd.service", "SenderWebApp")
+    .Enrich.WithProperty("dd.version", gitCommitHash)
+    .Enrich.WithProperty("dd.env", Environment.GetEnvironmentVariable("DD_ENV") ?? "development")
+    .WriteTo.Console(new CompactJsonFormatter())
+    .CreateLogger();
 
-// Add MSMQ Service
-// REAL MSMQ MODE (Windows only) - Default for customer demos
-builder.Services.AddSingleton<SenderWebApp.Services.IMsmqService, SenderWebApp.Services.MsmqService>();
+try
+{
+    Log.Information("Starting SenderWebApp with version {Version}", gitCommitHash);
 
-// MOCK MODE (works on Mac/Linux/Windows without MSMQ) - for testing IIS/API only
-// Uncomment this and comment out MsmqService above to use Mock mode
-// builder.Services.AddSingleton<SenderWebApp.Services.IMsmqService, SenderWebApp.Services.MockMsmqService>();
+    var builder = WebApplication.CreateBuilder(args);
 
-var app = builder.Build();
+    // Use Serilog for logging
+    builder.Host.UseSerilog();
 
-// Configure the HTTP request pipeline.
-app.UseSwagger();
-app.UseSwaggerUI();
+    // Configure for Windows Service support
+    builder.Host.UseWindowsService();
 
-app.UseAuthorization();
+    // Add services to the container.
+    builder.Services.AddControllers();
+    builder.Services.AddEndpointsApiExplorer();
+    builder.Services.AddSwaggerGen();
 
-app.MapControllers();
+    // Add MSMQ Service
+    // REAL MSMQ MODE (Windows only) - Default for customer demos
+    builder.Services.AddSingleton<SenderWebApp.Services.IMsmqService, SenderWebApp.Services.MsmqService>();
 
-// Add a simple health check endpoint
-app.MapGet("/", () => Results.Ok(new { 
-    service = "Sender Web App",
-    status = "Running",
-    timestamp = DateTime.UtcNow
-}));
+    // MOCK MODE (works on Mac/Linux/Windows without MSMQ) - for testing IIS/API only
+    // Uncomment this and comment out MsmqService above to use Mock mode
+    // builder.Services.AddSingleton<SenderWebApp.Services.IMsmqService, SenderWebApp.Services.MockMsmqService>();
 
-app.Run();
+    var app = builder.Build();
+
+    // Configure the HTTP request pipeline.
+    app.UseSwagger();
+    app.UseSwaggerUI();
+
+    app.UseAuthorization();
+
+    app.MapControllers();
+
+    // Add a simple health check endpoint with version
+    app.MapGet("/", () => Results.Ok(new { 
+        service = "Sender Web App",
+        status = "Running",
+        version = gitCommitHash,
+        timestamp = DateTime.UtcNow
+    }));
+
+    app.Run();
+}
+catch (Exception ex)
+{
+    Log.Fatal(ex, "Application terminated unexpectedly");
+}
+finally
+{
+    Log.CloseAndFlush();
+}
 
