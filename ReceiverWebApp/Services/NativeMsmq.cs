@@ -39,10 +39,10 @@ public static class NativeMsmq
     [StructLayout(LayoutKind.Sequential)]
     private struct MQPROPVARIANT
     {
-        public short vt;
-        public short wReserved1;
-        public short wReserved2;
-        public short wReserved3;
+        public ushort vt;
+        public ushort wReserved1;
+        public ushort wReserved2;
+        public ushort wReserved3;
         public IntPtr ptr;
         public int intValue;
     }
