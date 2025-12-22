@@ -76,21 +76,59 @@ if ($LASTEXITCODE -ne 0) {
 Write-Host "✓ Build successful" -ForegroundColor Green
 Write-Host ""
 
-# Step 5: Run applications
-Write-Host "STEP 5: Starting applications..." -ForegroundColor Yellow
+# Step 5: Run applications with Datadog tracing
+Write-Host "STEP 5: Starting applications with Datadog instrumentation..." -ForegroundColor Yellow
 Write-Host ""
 
 $scriptPath = Split-Path -Parent $MyInvocation.MyCommand.Path
 
-# Start Sender
-Write-Host "  → Starting Sender App (Port 8081)..." -ForegroundColor Cyan
-Start-Process powershell -ArgumentList "-NoExit", "-Command", "cd '$scriptPath\SenderWebApp\bin\Release\net48'; .\SenderWebApp.exe"
+# Datadog startup script for .NET Framework
+$datadogSetup = @"
+Write-Host '========================================' -ForegroundColor Cyan
+Write-Host 'Datadog APM Configuration' -ForegroundColor Cyan
+Write-Host '========================================' -ForegroundColor Cyan
 
-Start-Sleep -Seconds 2
+# Set Datadog environment variables for .NET Framework
+`$env:COR_ENABLE_PROFILING=1
+`$env:COR_PROFILER='{846F5F1C-F9AE-4B07-969E-05C26BC060D8}'
+`$env:COR_PROFILER_PATH_64='C:\Program Files\Datadog\.NET Tracer\win-x64\Datadog.Trace.ClrProfiler.Native.dll'
+`$env:COR_PROFILER_PATH_32='C:\Program Files\Datadog\.NET Tracer\win-x86\Datadog.Trace.ClrProfiler.Native.dll'
+`$env:DD_DOTNET_TRACER_HOME='C:\Program Files\Datadog\.NET Tracer'
+`$env:DD_INTEGRATIONS='C:\Program Files\Datadog\.NET Tracer\integrations.json'
 
-# Start Receiver
-Write-Host "  → Starting Receiver App (Port 8082)..." -ForegroundColor Cyan
-Start-Process powershell -ArgumentList "-NoExit", "-Command", "cd '$scriptPath\ReceiverWebApp\bin\Release\net48'; .\ReceiverWebApp.exe"
+# Optional: Additional Datadog settings
+`$env:DD_LOGS_INJECTION='true'
+`$env:DD_RUNTIME_METRICS_ENABLED='true'
+`$env:DD_ENV='testing'
+`$env:DD_SERVICE='msmq-demo'
+
+Write-Host 'Datadog Profiler: ENABLED' -ForegroundColor Green
+Write-Host 'Logs Injection: ENABLED' -ForegroundColor Green
+Write-Host 'Runtime Metrics: ENABLED' -ForegroundColor Green
+Write-Host 'Environment: testing' -ForegroundColor Green
+Write-Host '' 
+
+"@
+
+# Start Sender with Datadog
+Write-Host "  → Starting Sender App (Port 8081) with Datadog..." -ForegroundColor Cyan
+$senderCommand = $datadogSetup + @"
+Write-Host 'Starting Sender Application...' -ForegroundColor Yellow
+cd '$scriptPath\SenderWebApp\bin\Release\net48'
+.\SenderWebApp.exe
+"@
+Start-Process powershell -ArgumentList "-NoExit", "-Command", $senderCommand
+
+Start-Sleep -Seconds 3
+
+# Start Receiver with Datadog
+Write-Host "  → Starting Receiver App (Port 8082) with Datadog..." -ForegroundColor Cyan
+$receiverCommand = $datadogSetup + @"
+Write-Host 'Starting Receiver Application...' -ForegroundColor Yellow
+cd '$scriptPath\ReceiverWebApp\bin\Release\net48'
+.\ReceiverWebApp.exe
+"@
+Start-Process powershell -ArgumentList "-NoExit", "-Command", $receiverCommand
 
 Write-Host ""
 Write-Host "========================================" -ForegroundColor Green
