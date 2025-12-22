@@ -11,7 +11,7 @@ var gitCommitHash = Assembly.GetExecutingAssembly()
 var appDirectory = AppContext.BaseDirectory;
 var logPath = Path.Combine(appDirectory, "logs", "receiver-.json");
 
-// Configure Serilog with JSON formatting and Datadog error fields
+// Configure Serilog with JSON formatting, file, and Windows Event Log
 Log.Logger = new LoggerConfiguration()
     .Enrich.FromLogContext()
     .Enrich.WithProperty("service", "ReceiverWebApp")
@@ -27,6 +27,11 @@ Log.Logger = new LoggerConfiguration()
         rollingInterval: RollingInterval.Day,
         retainedFileCountLimit: 7,
         buffered: false)
+    .WriteTo.EventLog(
+        source: "ReceiverWebApp",
+        logName: "Application",
+        manageEventSource: true,
+        restrictedToMinimumLevel: Serilog.Events.LogEventLevel.Information)
     .CreateLogger();
 
 try
