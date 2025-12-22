@@ -16,7 +16,8 @@
   </Target>
 
   <ItemGroup>
-    <!-- NO LONGER USING Experimental.System.Messaging - using native Win32 API instead -->
+    <!-- Using Experimental.System.Messaging with periodic refresh strategy -->
+    <PackageReference Include="Experimental.System.Messaging" Version="1.1.0" Condition="'$(OS)' == 'Windows_NT'" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.5.0" />
     <PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices" Version="8.0.0" />
