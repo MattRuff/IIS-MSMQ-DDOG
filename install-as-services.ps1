@@ -189,7 +189,8 @@ Write-Host ""
 # Install Receiver Service
 Write-Host "Installing Receiver Service..." -ForegroundColor Yellow
 $receiverBinPath = "`"$receiverPath`""
-sc.exe create $receiverServiceName binPath= $receiverBinPath start= auto DisplayName= "MSMQ Receiver Service" obj= "LocalSystem"
+# Run as NetworkService instead of LocalSystem for proper MSMQ read permissions
+sc.exe create $receiverServiceName binPath= $receiverBinPath start= auto DisplayName= "MSMQ Receiver Service" obj= "NT AUTHORITY\NetworkService"
 
 if ($LASTEXITCODE -eq 0) {
     # Set description
@@ -198,6 +199,46 @@ if ($LASTEXITCODE -eq 0) {
     # Grant MSMQ permissions
     Write-Host "  Configuring MSMQ permissions..." -ForegroundColor Gray
     sc.exe privs $receiverServiceName SeChangeNotifyPrivilege/SeImpersonatePrivilege/SeCreateGlobalPrivilege
+    
+    # Grant NetworkService explicit permissions to the MSMQ queue
+    Write-Host "  Granting NetworkService queue access..." -ForegroundColor Gray
+    $queuePath = ".\private$\OrderQueue"
+    try {
+        # Load MSMQ assembly
+        [System.Reflection.Assembly]::LoadWithPartialName("System.Messaging") | Out-Null
+        
+        # Get the queue
+        if ([System.Messaging.MessageQueue]::Exists($queuePath)) {
+            $queue = New-Object System.Messaging.MessageQueue($queuePath)
+            
+            # Grant NetworkService full control
+            $queue.SetPermissions("NETWORK SERVICE", [System.Messaging.MessageQueueAccessRights]::FullControl, [System.Messaging.AccessControlEntryType]::Allow)
+            Write-Host "  [OK] Queue permissions granted to NetworkService" -ForegroundColor Green
+        } else {
+            Write-Host "  [WARN] Queue doesn't exist yet, permissions will be set when queue is created" -ForegroundColor Yellow
+        }
+    } catch {
+        Write-Host "  [WARN] Could not set queue permissions: $($_.Exception.Message)" -ForegroundColor Yellow
+        Write-Host "  Queue permissions may need to be set manually" -ForegroundColor Yellow
+    }
+    
+    # Grant NetworkService write permissions to log directory
+    Write-Host "  Granting log directory permissions..." -ForegroundColor Gray
+    $receiverLogDir = Join-Path (Split-Path $receiverPath) "logs"
+    if (-not (Test-Path $receiverLogDir)) {
+        New-Item -ItemType Directory -Path $receiverLogDir -Force | Out-Null
+    }
+    try {
+        $acl = Get-Acl $receiverLogDir
+        $permission = "NETWORK SERVICE","FullControl","ContainerInherit,ObjectInherit","None","Allow"
+        $accessRule = New-Object System.Security.AccessControl.FileSystemAccessRule $permission
+        $acl.SetAccessRule($accessRule)
+        Set-Acl $receiverLogDir $acl
+        Write-Host "  [OK] Log directory permissions granted" -ForegroundColor Green
+    } catch {
+        Write-Host "  [WARN] Could not set log directory permissions: $($_.Exception.Message)" -ForegroundColor Yellow
+    }
+    
     Write-Host "  [OK] Created" -ForegroundColor Green
 } else {
     Write-Host "  [ERROR] Failed to create service" -ForegroundColor Red
