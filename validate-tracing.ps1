@@ -117,12 +117,13 @@ Write-Host ""
 
 # Check receiver status
 Write-Host "8. Checking Receiver Status..." -ForegroundColor Yellow
-$statusResponse = Invoke-WebRequest -Uri "http://localhost:8082/api/status" -UseBasicParsing
+$statusResponse = Invoke-WebRequest -Uri "http://localhost:8082/api/status/health" -UseBasicParsing
 $status = $statusResponse.Content | ConvertFrom-Json
-Write-Host "  Messages Processed: $($status.messagesProcessed)" -ForegroundColor Cyan
+Write-Host "  Service: $($status.service)" -ForegroundColor Cyan
 Write-Host "  Queue Available: $($status.queueAvailable)" -ForegroundColor Cyan
 Write-Host "  Messages in Queue: $($status.messagesInQueue)" -ForegroundColor Cyan
-Write-Host "  [OK] Receiver is processing messages" -ForegroundColor Green
+Write-Host "  Timestamp: $($status.timestamp)" -ForegroundColor Cyan
+Write-Host "  [OK] Receiver is healthy" -ForegroundColor Green
 Write-Host ""
 
 # Summary
