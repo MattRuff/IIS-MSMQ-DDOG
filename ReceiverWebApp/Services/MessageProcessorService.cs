@@ -38,10 +38,24 @@ namespace ReceiverWebApp.Services
                         await Task.Delay(TimeSpan.FromSeconds(2), stoppingToken);
                     }
                 }
+                catch (OperationCanceledException)
+                {
+                    // Service is stopping - this is normal, don't log as error
+                    break;
+                }
                 catch (Exception ex)
                 {
                     _logger.LogError(ex, "Error in message processing loop");
-                    await Task.Delay(TimeSpan.FromSeconds(5), stoppingToken);
+                    
+                    try
+                    {
+                        await Task.Delay(TimeSpan.FromSeconds(5), stoppingToken);
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        // Service stopping during error delay
+                        break;
+                    }
                 }
             }
 
