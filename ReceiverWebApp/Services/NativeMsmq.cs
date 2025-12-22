@@ -94,15 +94,13 @@ public static class NativeMsmq
         {
             int hr;
             
-            // For private queues, use direct format name
-            // Convert .\private$\OrderQueue to DIRECT=OS:.\private$\OrderQueue
+            // For local private queues, use the direct format with dot notation
+            // .\private$\OrderQueue -> DIRECT=OS:.\private$\OrderQueue
             string formatName;
             if (queuePath.StartsWith(@".\private$\"))
             {
-                // Direct format name for local private queues
-                string machineName = Environment.MachineName;
-                string queueName = queuePath.Substring(@".\private$\".Length);
-                formatName = $"DIRECT=OS:{machineName}\\private$\\{queueName}";
+                // Use DIRECT=OS with local path (dot notation for localhost)
+                formatName = $"DIRECT=OS:{queuePath}";
             }
             else
             {
