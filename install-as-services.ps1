@@ -34,16 +34,37 @@ if ($Uninstall) {
     Write-Host ""
     
     # Stop and remove Sender service
-    Write-Host "Removing Sender Service..." -ForegroundColor Yellow
+    Write-Host "Stopping and removing Sender Service..." -ForegroundColor Yellow
     $service = Get-Service -Name $senderServiceName -ErrorAction SilentlyContinue
     if ($service) {
-        if ($service.Status -eq "Running") {
-            Stop-Service -Name $senderServiceName -Force
-            Start-Sleep -Seconds 2
-            Write-Host "  [OK] Stopped" -ForegroundColor Green
+        # Always try to stop, regardless of current status
+        Write-Host "  Current status: $($service.Status)" -ForegroundColor Gray
+        if ($service.Status -ne "Stopped") {
+            try {
+                Stop-Service -Name $senderServiceName -Force -ErrorAction Stop
+                Write-Host "  [OK] Stop command sent" -ForegroundColor Green
+            } catch {
+                Write-Host "  [WARN] Stop failed: $($_.Exception.Message)" -ForegroundColor Yellow
+            }
+            
+            # Wait for service to fully stop
+            Write-Host "  Waiting for service to stop..." -ForegroundColor Gray
+            Start-Sleep -Seconds 5
+            
+            # Check final status
+            $service.Refresh()
+            if ($service.Status -eq "Stopped") {
+                Write-Host "  [OK] Service stopped" -ForegroundColor Green
+            } else {
+                Write-Host "  [WARN] Service status: $($service.Status)" -ForegroundColor Yellow
+            }
+        } else {
+            Write-Host "  [OK] Already stopped" -ForegroundColor Green
         }
+        
+        # Delete the service
         sc.exe delete $senderServiceName
-        Write-Host "  [OK] Removed" -ForegroundColor Green
+        Write-Host "  [OK] Service removed" -ForegroundColor Green
     } else {
         Write-Host "  Sender service not found (already removed?)" -ForegroundColor Gray
     }
@@ -51,16 +72,37 @@ if ($Uninstall) {
     Write-Host ""
     
     # Stop and remove Receiver service
-    Write-Host "Removing Receiver Service..." -ForegroundColor Yellow
+    Write-Host "Stopping and removing Receiver Service..." -ForegroundColor Yellow
     $service = Get-Service -Name $receiverServiceName -ErrorAction SilentlyContinue
     if ($service) {
-        if ($service.Status -eq "Running") {
-            Stop-Service -Name $receiverServiceName -Force
-            Start-Sleep -Seconds 2
-            Write-Host "  [OK] Stopped" -ForegroundColor Green
+        # Always try to stop, regardless of current status
+        Write-Host "  Current status: $($service.Status)" -ForegroundColor Gray
+        if ($service.Status -ne "Stopped") {
+            try {
+                Stop-Service -Name $receiverServiceName -Force -ErrorAction Stop
+                Write-Host "  [OK] Stop command sent" -ForegroundColor Green
+            } catch {
+                Write-Host "  [WARN] Stop failed: $($_.Exception.Message)" -ForegroundColor Yellow
+            }
+            
+            # Wait for service to fully stop
+            Write-Host "  Waiting for service to stop..." -ForegroundColor Gray
+            Start-Sleep -Seconds 5
+            
+            # Check final status
+            $service.Refresh()
+            if ($service.Status -eq "Stopped") {
+                Write-Host "  [OK] Service stopped" -ForegroundColor Green
+            } else {
+                Write-Host "  [WARN] Service status: $($service.Status)" -ForegroundColor Yellow
+            }
+        } else {
+            Write-Host "  [OK] Already stopped" -ForegroundColor Green
         }
+        
+        # Delete the service
         sc.exe delete $receiverServiceName
-        Write-Host "  [OK] Removed" -ForegroundColor Green
+        Write-Host "  [OK] Service removed" -ForegroundColor Green
     } else {
         Write-Host "  Receiver service not found (already removed?)" -ForegroundColor Gray
     }
