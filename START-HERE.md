@@ -139,7 +139,7 @@ IIS-MSMQ-Demo/
 
 ```powershell
 # Send a test order
-curl http://localhost:5001/api/order/test
+curl http://localhost:8081/api/order/test
 
 # Send a custom order
 $order = @{
@@ -149,16 +149,16 @@ $order = @{
     totalAmount = 149.99
 } | ConvertTo-Json
 
-Invoke-RestMethod -Uri "http://localhost:5001/api/order" -Method Post -Body $order -ContentType "application/json"
+Invoke-RestMethod -Uri "http://localhost:8081/api/order" -Method Post -Body $order -ContentType "application/json"
 
 # Check queue status
-curl http://localhost:5002/api/status/health
+curl http://localhost:8082/api/status/health
 ```
 
 ### Monitoring
 
-- **Sender App**: http://localhost:5001/swagger
-- **Receiver App**: http://localhost:5002/swagger
+- **Sender App**: http://localhost:8081/swagger
+- **Receiver App**: http://localhost:8082/swagger
 - **Datadog APM**: https://app.datadoghq.com/apm/traces (after setup)
 
 ### Development
@@ -329,7 +329,7 @@ Start-Service MSMQ
 Edit `appsettings.json` in each app and change the port:
 ```json
 {
-  "Urls": "http://localhost:5001"
+  "Urls": "http://localhost:8081"
 }
 ```
 

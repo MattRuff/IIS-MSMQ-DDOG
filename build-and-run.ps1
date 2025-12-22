@@ -83,13 +83,13 @@ Write-Host ""
 $scriptPath = Split-Path -Parent $MyInvocation.MyCommand.Path
 
 # Start Sender
-Write-Host "  → Starting Sender App (Port 5001)..." -ForegroundColor Cyan
+Write-Host "  → Starting Sender App (Port 8081)..." -ForegroundColor Cyan
 Start-Process powershell -ArgumentList "-NoExit", "-Command", "cd '$scriptPath\SenderWebApp\bin\Release\net8.0'; dotnet SenderWebApp.dll"
 
 Start-Sleep -Seconds 2
 
 # Start Receiver
-Write-Host "  → Starting Receiver App (Port 5002)..." -ForegroundColor Cyan
+Write-Host "  → Starting Receiver App (Port 8082)..." -ForegroundColor Cyan
 Start-Process powershell -ArgumentList "-NoExit", "-Command", "cd '$scriptPath\ReceiverWebApp\bin\Release\net8.0'; dotnet ReceiverWebApp.dll"
 
 Write-Host ""

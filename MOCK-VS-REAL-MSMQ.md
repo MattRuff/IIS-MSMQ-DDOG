@@ -111,11 +111,11 @@ cd ReceiverWebApp
 dotnet run
 
 # Terminal 3: Test Sender API
-curl http://localhost:5001/api/order/test
+curl http://localhost:8081/api/order/test
 # ✅ Should return success
 
 # Test Receiver API
-curl http://localhost:5002/api/status/health
+curl http://localhost:8082/api/status/health
 # ✅ Should return health status
 
 # Note: Receiver won't process Sender's messages in mock mode
@@ -133,14 +133,14 @@ curl http://localhost:5002/api/status/health
 .\run-applications.ps1
 
 # Send test order
-curl http://localhost:5001/api/order/test
+curl http://localhost:8081/api/order/test
 
 # Watch Receiver window - you'll see:
 # "Message received successfully. OrderId: xxx"
 # "Order xxx processed successfully"
 
 # Check queue status
-curl http://localhost:5002/api/status/health
+curl http://localhost:8082/api/status/health
 # Should show messagesInQueue: 0 (processed)
 ```
 

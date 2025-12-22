@@ -143,7 +143,7 @@ HTTP Request → Sender App → MSMQ Send → MSMQ Receive → Receiver App → 
 ```
 1. Client Request
    │
-   └──► HTTP POST http://localhost:5001/api/order
+   └──► HTTP POST http://localhost:8081/api/order
         {
           "customerName": "John Doe",
           "productName": "Widget",

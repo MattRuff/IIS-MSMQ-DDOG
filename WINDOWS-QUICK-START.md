@@ -40,10 +40,10 @@ dotnet build -c Release
 # In a new PowerShell window:
 
 # Send test order
-curl http://localhost:5001/api/order/test
+curl http://localhost:8081/api/order/test
 
 # Check status
-curl http://localhost:5002/api/status/health
+curl http://localhost:8082/api/status/health
 
 # Or run full test suite
 .\test-system.ps1
@@ -53,9 +53,9 @@ curl http://localhost:5002/api/status/health
 
 ## 🌐 Open in Browser
 
-- **Sender Swagger**: http://localhost:5001/swagger
-- **Receiver Swagger**: http://localhost:5002/swagger
-- **Quick Test**: http://localhost:5001/api/order/test
+- **Sender Swagger**: http://localhost:8081/swagger
+- **Receiver Swagger**: http://localhost:8082/swagger
+- **Quick Test**: http://localhost:8081/api/order/test
 
 ---
 
@@ -66,7 +66,7 @@ curl http://localhost:5002/api/status/health
 info: SenderWebApp.Services.MsmqService[0]
       Queue already exists: .\private$\OrderQueue
 info: Microsoft.Hosting.Lifetime[14]
-      Now listening on: http://localhost:5001
+      Now listening on: http://localhost:8081
 ```
 
 ### In Receiver Window:
@@ -74,7 +74,7 @@ info: Microsoft.Hosting.Lifetime[14]
 info: ReceiverWebApp.Services.MessageProcessorService[0]
       Message Processor Service started
 info: Microsoft.Hosting.Lifetime[14]
-      Now listening on: http://localhost:5002
+      Now listening on: http://localhost:8082
 ```
 
 ### After Sending an Order:

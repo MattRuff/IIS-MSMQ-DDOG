@@ -14,7 +14,7 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "http://localhost:5001/",
+              "raw": "http://localhost:8081/",
               "protocol": "http",
               "host": ["localhost"],
               "port": "5001",
@@ -28,7 +28,7 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "http://localhost:5001/api/order/health",
+              "raw": "http://localhost:8081/api/order/health",
               "protocol": "http",
               "host": ["localhost"],
               "port": "5001",
@@ -42,7 +42,7 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "http://localhost:5001/api/order/test",
+              "raw": "http://localhost:8081/api/order/test",
               "protocol": "http",
               "host": ["localhost"],
               "port": "5001",
@@ -65,7 +65,7 @@
               "raw": "{\n  \"customerName\": \"John Doe\",\n  \"productName\": \"Premium Widget\",\n  \"quantity\": 5,\n  \"totalAmount\": 299.99\n}"
             },
             "url": {
-              "raw": "http://localhost:5001/api/order",
+              "raw": "http://localhost:8081/api/order",
               "protocol": "http",
               "host": ["localhost"],
               "port": "5001",
@@ -88,7 +88,7 @@
               "raw": "{\n  \"customerName\": \"Jane Smith\",\n  \"productName\": \"Enterprise License\",\n  \"quantity\": 100,\n  \"totalAmount\": 9999.99\n}"
             },
             "url": {
-              "raw": "http://localhost:5001/api/order",
+              "raw": "http://localhost:8081/api/order",
               "protocol": "http",
               "host": ["localhost"],
               "port": "5001",
@@ -107,7 +107,7 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "http://localhost:5002/",
+              "raw": "http://localhost:8082/",
               "protocol": "http",
               "host": ["localhost"],
               "port": "5002",
@@ -121,7 +121,7 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "http://localhost:5002/api/status/health",
+              "raw": "http://localhost:8082/api/status/health",
               "protocol": "http",
               "host": ["localhost"],
               "port": "5002",
@@ -135,7 +135,7 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "http://localhost:5002/api/status/queue-status",
+              "raw": "http://localhost:8082/api/status/queue-status",
               "protocol": "http",
               "host": ["localhost"],
               "port": "5002",
@@ -181,7 +181,7 @@
               "raw": "{\n  \"customerName\": \"Customer {{$randomInt}}\",\n  \"productName\": \"Product {{$randomInt}}\",\n  \"quantity\": {{$randomInt}},\n  \"totalAmount\": {{$randomPrice}}\n}"
             },
             "url": {
-              "raw": "http://localhost:5001/api/order",
+              "raw": "http://localhost:8081/api/order",
               "protocol": "http",
               "host": ["localhost"],
               "port": "5001",
@@ -195,12 +195,12 @@
   "variable": [
     {
       "key": "sender_url",
-      "value": "http://localhost:5001",
+      "value": "http://localhost:8081",
       "type": "string"
     },
     {
       "key": "receiver_url",
-      "value": "http://localhost:5002",
+      "value": "http://localhost:8082",
       "type": "string"
     }
   ]

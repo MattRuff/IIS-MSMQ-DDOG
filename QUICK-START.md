@@ -45,8 +45,8 @@ dotnet build
 ```
 
 Wait for both applications to start. You should see:
-- Sender: http://localhost:5001
-- Receiver: http://localhost:5002
+- Sender: http://localhost:8081
+- Receiver: http://localhost:8082
 
 ### 4. Test the System (1 minute)
 
@@ -68,13 +68,13 @@ Your distributed MSMQ system is running!
 
 ```powershell
 # Send a test order
-curl http://localhost:5001/api/order/test
+curl http://localhost:8081/api/order/test
 
 # Check sender health
-curl http://localhost:5001/api/order/health
+curl http://localhost:8081/api/order/health
 
 # Check receiver status
-curl http://localhost:5002/api/status/health
+curl http://localhost:8082/api/status/health
 
 # Send custom order
 $body = @{
@@ -84,7 +84,7 @@ $body = @{
     totalAmount = 199.99
 } | ConvertTo-Json
 
-Invoke-RestMethod -Uri "http://localhost:5001/api/order" `
+Invoke-RestMethod -Uri "http://localhost:8081/api/order" `
     -Method Post `
     -Body $body `
     -ContentType "application/json"
@@ -92,8 +92,8 @@ Invoke-RestMethod -Uri "http://localhost:5001/api/order" `
 
 ## View Swagger UI
 
-- Sender: http://localhost:5001/swagger
-- Receiver: http://localhost:5002/swagger
+- Sender: http://localhost:8081/swagger
+- Receiver: http://localhost:8082/swagger
 
 ## Next Steps
 
@@ -118,7 +118,7 @@ Start-Service MSMQ
 Edit `appsettings.json` in each app:
 ```json
 {
-  "Urls": "http://localhost:5001"  // Change to available port
+  "Urls": "http://localhost:8081"  // Change to available port
 }
 ```
 

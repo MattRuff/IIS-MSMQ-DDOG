@@ -191,8 +191,8 @@ Write-Host "Applications Starting with Datadog APM!" -ForegroundColor Green
 Write-Host "========================================" -ForegroundColor Green
 Write-Host ""
 Write-Host "Applications:" -ForegroundColor Yellow
-Write-Host "  Sender:   http://localhost:5001" -ForegroundColor White
-Write-Host "  Receiver: http://localhost:5002" -ForegroundColor White
+Write-Host "  Sender:   http://localhost:8081" -ForegroundColor White
+Write-Host "  Receiver: http://localhost:8082" -ForegroundColor White
 Write-Host ""
 Write-Host "Datadog:" -ForegroundColor Yellow
 Write-Host "  Environment: sandbox" -ForegroundColor White
@@ -340,7 +340,7 @@ Run the script:
 ```powershell
 # Send test orders
 for ($i = 1; $i -le 10; $i++) {
-    Invoke-RestMethod -Uri "http://localhost:5001/api/order/test" -Method Get
+    Invoke-RestMethod -Uri "http://localhost:8081/api/order/test" -Method Get
     Start-Sleep -Seconds 1
 }
 ```

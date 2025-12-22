@@ -69,15 +69,15 @@ dotnet build
 ### Access from Mac
 
 Parallels creates a shared network. From your **Mac browser**, access:
-- Sender App: `http://windows.local:5001`
-- Receiver App: `http://windows.local:5002`
+- Sender App: `http://windows.local:8081`
+- Receiver App: `http://windows.local:8082`
 
 Or find the Windows VM IP:
 ```powershell
 # In Windows VM:
 ipconfig
 # Look for "Ethernet adapter Ethernet"
-# Use that IP, e.g., http://10.211.55.3:5001
+# Use that IP, e.g., http://10.211.55.3:8081
 ```
 
 ---
@@ -136,7 +136,7 @@ Find Windows VM IP:
 ipconfig
 ```
 
-Then from Mac browser: `http://<VM-IP>:5001`
+Then from Mac browser: `http://<VM-IP>:8081`
 
 ---
 
@@ -215,7 +215,7 @@ az vm open-port --resource-group msmq-demo --name msmq-sandbox --port 5001 --pri
 az vm open-port --resource-group msmq-demo --name msmq-sandbox --port 5002 --priority 1002
 
 # Now access from Mac browser using public IP:
-# http://<PUBLIC-IP>:5001
+# http://<PUBLIC-IP>:8081
 ```
 
 ---
@@ -274,11 +274,11 @@ dotnet build
 ipconfig
 
 # Then from Mac terminal:
-curl http://<VM-IP>:5001/api/order/test
-curl http://<VM-IP>:5002/api/status/health
+curl http://<VM-IP>:8081/api/order/test
+curl http://<VM-IP>:8082/api/status/health
 
 # Or open in Mac browser:
-open http://<VM-IP>:5001/swagger
+open http://<VM-IP>:8081/swagger
 ```
 
 ---
@@ -410,7 +410,7 @@ az group delete --name msmq-demo --yes
 |------|---------|
 | **Find Windows IP** | `ipconfig` (in VM) |
 | **Start apps** | `.\run-applications.ps1` |
-| **Test from Mac** | `curl http://<VM-IP>:5001/api/order/test` |
+| **Test from Mac** | `curl http://<VM-IP>:8081/api/order/test` |
 | **Stop apps** | Ctrl+C in PowerShell windows |
 | **Restart MSMQ** | `Restart-Service MSMQ` (as Admin) |
 | **Check MSMQ** | `Get-Service MSMQ` |

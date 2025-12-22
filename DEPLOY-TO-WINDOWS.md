@@ -235,11 +235,11 @@ After deployment:
 
 ```powershell
 # 1. Check apps are running
-curl http://localhost:5001/
-curl http://localhost:5002/
+curl http://localhost:8081/
+curl http://localhost:8082/
 
 # 2. Send a test order
-curl http://localhost:5001/api/order/test
+curl http://localhost:8081/api/order/test
 
 # 3. Run full test suite
 .\test-system.ps1

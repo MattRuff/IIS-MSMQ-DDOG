@@ -17,12 +17,12 @@ Make sure both applications are running:
 
 **PowerShell**:
 ```powershell
-Invoke-RestMethod -Uri "http://localhost:5001/" -Method Get
+Invoke-RestMethod -Uri "http://localhost:8081/" -Method Get
 ```
 
 **Curl**:
 ```bash
-curl http://localhost:5001/
+curl http://localhost:8081/
 ```
 
 **Expected Response**:
@@ -40,12 +40,12 @@ curl http://localhost:5001/
 
 **PowerShell**:
 ```powershell
-Invoke-RestMethod -Uri "http://localhost:5001/api/order/health" -Method Get
+Invoke-RestMethod -Uri "http://localhost:8081/api/order/health" -Method Get
 ```
 
 **Curl**:
 ```bash
-curl http://localhost:5001/api/order/health
+curl http://localhost:8081/api/order/health
 ```
 
 **Expected Response**:
@@ -63,12 +63,12 @@ curl http://localhost:5001/api/order/health
 
 **PowerShell**:
 ```powershell
-Invoke-RestMethod -Uri "http://localhost:5001/api/order/test" -Method Get
+Invoke-RestMethod -Uri "http://localhost:8081/api/order/test" -Method Get
 ```
 
 **Curl**:
 ```bash
-curl http://localhost:5001/api/order/test
+curl http://localhost:8081/api/order/test
 ```
 
 **Expected Response**:
@@ -101,12 +101,12 @@ $body = @{
     totalAmount = 299.99
 } | ConvertTo-Json
 
-Invoke-RestMethod -Uri "http://localhost:5001/api/order" -Method Post -Body $body -ContentType "application/json"
+Invoke-RestMethod -Uri "http://localhost:8081/api/order" -Method Post -Body $body -ContentType "application/json"
 ```
 
 **Curl**:
 ```bash
-curl -X POST http://localhost:5001/api/order \
+curl -X POST http://localhost:8081/api/order \
   -H "Content-Type: application/json" \
   -d '{
     "customerName": "John Doe",
@@ -118,7 +118,7 @@ curl -X POST http://localhost:5001/api/order \
 
 **PowerShell (Alternative - One Liner)**:
 ```powershell
-Invoke-RestMethod -Uri "http://localhost:5001/api/order" -Method Post -Body '{"customerName":"Jane Smith","productName":"Enterprise License","quantity":100,"totalAmount":9999.99}' -ContentType "application/json"
+Invoke-RestMethod -Uri "http://localhost:8081/api/order" -Method Post -Body '{"customerName":"Jane Smith","productName":"Enterprise License","quantity":100,"totalAmount":9999.99}' -ContentType "application/json"
 ```
 
 **Expected Response**:
@@ -139,12 +139,12 @@ Invoke-RestMethod -Uri "http://localhost:5001/api/order" -Method Post -Body '{"c
 
 **PowerShell**:
 ```powershell
-Invoke-RestMethod -Uri "http://localhost:5002/" -Method Get
+Invoke-RestMethod -Uri "http://localhost:8082/" -Method Get
 ```
 
 **Curl**:
 ```bash
-curl http://localhost:5002/
+curl http://localhost:8082/
 ```
 
 **Expected Response**:
@@ -162,12 +162,12 @@ curl http://localhost:5002/
 
 **PowerShell**:
 ```powershell
-Invoke-RestMethod -Uri "http://localhost:5002/api/status/health" -Method Get
+Invoke-RestMethod -Uri "http://localhost:8082/api/status/health" -Method Get
 ```
 
 **Curl**:
 ```bash
-curl http://localhost:5002/api/status/health
+curl http://localhost:8082/api/status/health
 ```
 
 **Expected Response**:
@@ -186,12 +186,12 @@ curl http://localhost:5002/api/status/health
 
 **PowerShell**:
 ```powershell
-Invoke-RestMethod -Uri "http://localhost:5002/api/status/queue-status" -Method Get
+Invoke-RestMethod -Uri "http://localhost:8082/api/status/queue-status" -Method Get
 ```
 
 **Curl**:
 ```bash
-curl http://localhost:5002/api/status/queue-status
+curl http://localhost:8082/api/status/queue-status
 ```
 
 **Expected Response**:
@@ -212,15 +212,15 @@ curl http://localhost:5002/api/status/queue-status
 ```powershell
 # 1. Check sender health
 Write-Host "1. Checking sender health..." -ForegroundColor Cyan
-Invoke-RestMethod -Uri "http://localhost:5001/api/order/health"
+Invoke-RestMethod -Uri "http://localhost:8081/api/order/health"
 
 # 2. Check receiver health
 Write-Host "`n2. Checking receiver health..." -ForegroundColor Cyan
-Invoke-RestMethod -Uri "http://localhost:5002/api/status/health"
+Invoke-RestMethod -Uri "http://localhost:8082/api/status/health"
 
 # 3. Send test order
 Write-Host "`n3. Sending test order..." -ForegroundColor Cyan
-$result = Invoke-RestMethod -Uri "http://localhost:5001/api/order/test"
+$result = Invoke-RestMethod -Uri "http://localhost:8081/api/order/test"
 $orderId = $result.order.orderId
 Write-Host "Order ID: $orderId" -ForegroundColor Green
 
@@ -230,7 +230,7 @@ Start-Sleep -Seconds 3
 
 # 5. Check queue status
 Write-Host "`n5. Checking queue status..." -ForegroundColor Cyan
-Invoke-RestMethod -Uri "http://localhost:5002/api/status/queue-status"
+Invoke-RestMethod -Uri "http://localhost:8082/api/status/queue-status"
 
 Write-Host "`nTest complete! Check receiver app logs for processing confirmation." -ForegroundColor Green
 ```
@@ -250,7 +250,7 @@ for ($i = 1; $i -le 10; $i++) {
         totalAmount = [decimal]($i * 49.99)
     } | ConvertTo-Json
     
-    $result = Invoke-RestMethod -Uri "http://localhost:5001/api/order" -Method Post -Body $body -ContentType "application/json"
+    $result = Invoke-RestMethod -Uri "http://localhost:8081/api/order" -Method Post -Body $body -ContentType "application/json"
     Write-Host "  Order $i sent: $($result.orderId)" -ForegroundColor Green
     Start-Sleep -Milliseconds 500
 }
@@ -278,7 +278,7 @@ for ($i = 1; $i -le 100; $i++) {
             totalAmount = 99.99
         } | ConvertTo-Json
         
-        Invoke-RestMethod -Uri "http://localhost:5001/api/order" -Method Post -Body $body -ContentType "application/json" | Out-Null
+        Invoke-RestMethod -Uri "http://localhost:8081/api/order" -Method Post -Body $body -ContentType "application/json" | Out-Null
         $successCount++
         
         if ($i % 10 -eq 0) {
@@ -295,7 +295,7 @@ Write-Host "  Success: $successCount" -ForegroundColor Green
 Write-Host "  Failed: $failCount" -ForegroundColor Red
 
 # Check queue depth
-$status = Invoke-RestMethod -Uri "http://localhost:5002/api/status/queue-status"
+$status = Invoke-RestMethod -Uri "http://localhost:8082/api/status/queue-status"
 Write-Host "  Messages in queue: $($status.messageCount)" -ForegroundColor Cyan
 ```
 
@@ -313,7 +313,7 @@ $smallOrder = @{
 } | ConvertTo-Json
 
 Write-Host "Sending small order..." -ForegroundColor Cyan
-Invoke-RestMethod -Uri "http://localhost:5001/api/order" -Method Post -Body $smallOrder -ContentType "application/json"
+Invoke-RestMethod -Uri "http://localhost:8081/api/order" -Method Post -Body $smallOrder -ContentType "application/json"
 
 # Medium order
 $mediumOrder = @{
@@ -324,7 +324,7 @@ $mediumOrder = @{
 } | ConvertTo-Json
 
 Write-Host "Sending medium order..." -ForegroundColor Cyan
-Invoke-RestMethod -Uri "http://localhost:5001/api/order" -Method Post -Body $mediumOrder -ContentType "application/json"
+Invoke-RestMethod -Uri "http://localhost:8081/api/order" -Method Post -Body $mediumOrder -ContentType "application/json"
 
 # Large order
 $largeOrder = @{
@@ -335,7 +335,7 @@ $largeOrder = @{
 } | ConvertTo-Json
 
 Write-Host "Sending large order..." -ForegroundColor Cyan
-Invoke-RestMethod -Uri "http://localhost:5001/api/order" -Method Post -Body $largeOrder -ContentType "application/json"
+Invoke-RestMethod -Uri "http://localhost:8081/api/order" -Method Post -Body $largeOrder -ContentType "application/json"
 
 Write-Host "`nAll orders sent!" -ForegroundColor Green
 ```
@@ -352,7 +352,7 @@ Write-Host ""
 
 while ($true) {
     try {
-        $status = Invoke-RestMethod -Uri "http://localhost:5002/api/status/queue-status"
+        $status = Invoke-RestMethod -Uri "http://localhost:8082/api/status/queue-status"
         $timestamp = Get-Date -Format "HH:mm:ss"
         Write-Host "[$timestamp] Messages in queue: $($status.messageCount)" -ForegroundColor Yellow
         Start-Sleep -Seconds 2
@@ -379,7 +379,7 @@ $invalidOrder = @{
 
 Write-Host "Sending invalid order (should still work - validation not strict)..." -ForegroundColor Yellow
 try {
-    Invoke-RestMethod -Uri "http://localhost:5001/api/order" -Method Post -Body $invalidOrder -ContentType "application/json"
+    Invoke-RestMethod -Uri "http://localhost:8081/api/order" -Method Post -Body $invalidOrder -ContentType "application/json"
     Write-Host "Order accepted (validation needed!)" -ForegroundColor Red
 }
 catch {
@@ -428,11 +428,11 @@ if ($confirm -eq "YES") {
 ### Access Swagger Documentation
 
 **Sender App**:
-- URL: http://localhost:5001/swagger
+- URL: http://localhost:8081/swagger
 - Try out all endpoints interactively
 
 **Receiver App**:
-- URL: http://localhost:5002/swagger
+- URL: http://localhost:8082/swagger
 - View status endpoints
 
 ---
@@ -455,12 +455,12 @@ if ($confirm -eq "YES") {
 
 | Action | Command |
 |--------|---------|
-| Send test order | `curl http://localhost:5001/api/order/test` |
-| Check sender health | `curl http://localhost:5001/api/order/health` |
-| Check receiver health | `curl http://localhost:5002/api/status/health` |
-| Check queue depth | `curl http://localhost:5002/api/status/queue-status` |
-| View sender docs | http://localhost:5001/swagger |
-| View receiver docs | http://localhost:5002/swagger |
+| Send test order | `curl http://localhost:8081/api/order/test` |
+| Check sender health | `curl http://localhost:8081/api/order/health` |
+| Check receiver health | `curl http://localhost:8082/api/status/health` |
+| Check queue depth | `curl http://localhost:8082/api/status/queue-status` |
+| View sender docs | http://localhost:8081/swagger |
+| View receiver docs | http://localhost:8082/swagger |
 
 ---
 

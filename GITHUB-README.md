@@ -25,8 +25,8 @@ cd IIS-MSMQ-DDOG
 ```
 
 **That's it!** Apps are running on:
-- Sender: http://localhost:5001
-- Receiver: http://localhost:5002
+- Sender: http://localhost:8081
+- Receiver: http://localhost:8082
 
 ---
 
@@ -108,10 +108,10 @@ git clone git@github.com:MattRuff/IIS-MSMQ-DDOG.git
 .\build-and-run.ps1
 
 # Test
-curl http://localhost:5001/api/order/test
+curl http://localhost:8081/api/order/test
 
 # Check status
-curl http://localhost:5002/api/status/health
+curl http://localhost:8082/api/status/health
 
 # Full test suite
 .\test-system.ps1

@@ -64,8 +64,8 @@ Use the provided script to start both applications:
 ```
 
 This will open two PowerShell windows:
-- **Sender App**: http://localhost:5001
-- **Receiver App**: http://localhost:5002
+- **Sender App**: http://localhost:8081
+- **Receiver App**: http://localhost:8082
 
 ### Step 4: Test the System
 
@@ -79,13 +79,13 @@ Or manually test with curl:
 
 ```powershell
 # Send a test order
-curl http://localhost:5001/api/order/test
+curl http://localhost:8081/api/order/test
 
 # Check sender health
-curl http://localhost:5001/api/order/health
+curl http://localhost:8081/api/order/health
 
 # Check receiver health and queue status
-curl http://localhost:5002/api/status/health
+curl http://localhost:8082/api/status/health
 ```
 
 ## API Endpoints
@@ -110,7 +110,7 @@ $body = @{
     totalAmount = 299.99
 } | ConvertTo-Json
 
-Invoke-RestMethod -Uri "http://localhost:5001/api/order" -Method Post -Body $body -ContentType "application/json"
+Invoke-RestMethod -Uri "http://localhost:8081/api/order" -Method Post -Body $body -ContentType "application/json"
 ```
 
 ### Receiver Application (Port 5002)
@@ -421,7 +421,7 @@ Change ports in respective `appsettings.json`:
 
 ```json
 {
-  "Urls": "http://localhost:5001"  // or 5002 for receiver
+  "Urls": "http://localhost:8081"  // or 5002 for receiver
 }
 ```
 

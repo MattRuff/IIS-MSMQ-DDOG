@@ -32,7 +32,7 @@ Write-Host "  Sender:   http://localhost:8081/swagger" -ForegroundColor White
 Write-Host "  Receiver: http://localhost:8082/swagger" -ForegroundColor White
 Write-Host ""
 Write-Host "Test the system:" -ForegroundColor Yellow
-Write-Host "  curl http://localhost:5001/api/order/test" -ForegroundColor White
+Write-Host "  curl http://localhost:8081/api/order/test" -ForegroundColor White
 Write-Host ""
 Write-Host "Press Ctrl+C to stop this script (applications will continue running)" -ForegroundColor Gray
 Write-Host "To stop applications, close their PowerShell windows" -ForegroundColor Gray

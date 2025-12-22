@@ -181,10 +181,10 @@ dotnet build
 # Expected: Both apps start without errors
 
 # 4. Basic Health Check
-curl http://localhost:5001/api/order/health
+curl http://localhost:8081/api/order/health
 # Expected: {"service":"Sender Web App","queueAvailable":true,...}
 
-curl http://localhost:5002/api/status/health
+curl http://localhost:8082/api/status/health
 # Expected: {"service":"Receiver Web App","queueAvailable":true,"messagesInQueue":0,...}
 ```
 
@@ -192,14 +192,14 @@ curl http://localhost:5002/api/status/health
 
 ```powershell
 # 1. Send test order
-curl http://localhost:5001/api/order/test
+curl http://localhost:8081/api/order/test
 # Expected: {"success":true,"order":{...}}
 
 # 2. Check receiver logs
 # Expected: Should see "Message received" and "Order processed" logs
 
 # 3. Verify queue
-curl http://localhost:5002/api/status/queue-status
+curl http://localhost:8082/api/status/queue-status
 # Expected: messageCount should be 0 (processed)
 ```
 
@@ -208,18 +208,18 @@ curl http://localhost:5002/api/status/queue-status
 ```powershell
 # Send 10 orders
 for ($i = 1; $i -le 10; $i++) {
-    curl http://localhost:5001/api/order/test
+    curl http://localhost:8081/api/order/test
 }
 
 # Check queue depth
-curl http://localhost:5002/api/status/health
+curl http://localhost:8082/api/status/health
 # Expected: messagesInQueue > 0
 
 # Wait 15 seconds
 Start-Sleep -Seconds 15
 
 # Check again
-curl http://localhost:5002/api/status/health
+curl http://localhost:8082/api/status/health
 # Expected: messagesInQueue should decrease/reach 0
 ```
 
@@ -230,18 +230,18 @@ curl http://localhost:5002/api/status/health
 Stop-Service MSMQ
 
 # Try sending message
-curl http://localhost:5001/api/order/test
+curl http://localhost:8081/api/order/test
 # Expected: 500 error with message about queue unavailable
 
 # Restart MSMQ
 Start-Service MSMQ
 
 # Try again
-curl http://localhost:5001/api/order/test
+curl http://localhost:8081/api/order/test
 # Expected: Success
 
 # Test 2: Invalid data
-curl -X POST http://localhost:5001/api/order -H "Content-Type: application/json" -d "{}"
+curl -X POST http://localhost:8081/api/order -H "Content-Type: application/json" -d "{}"
 # Expected: Should still work (creates defaults)
 
 # Test 3: Large message
@@ -282,7 +282,7 @@ Once Windows validation passes, test with Datadog:
 
 # 5. Send test orders
 for ($i = 1; $i -le 5; $i++) {
-    curl http://localhost:5001/api/order/test
+    curl http://localhost:8081/api/order/test
     Start-Sleep -Seconds 2
 }
 
