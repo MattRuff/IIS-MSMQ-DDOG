@@ -1,7 +1,6 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
-using Datadog.Trace;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -87,41 +86,24 @@ namespace ReceiverWebApp.Services
 
         private async Task ProcessOrder(OrderMessage order)
         {
-            // Create a Datadog span for message processing
-            using (var scope = Tracer.Instance.StartActive("msmq.process"))
+            try
             {
-                var span = scope.Span;
-                span.Type = "queue"; // Use string instead of SpanTypes constant for .NET Framework compatibility
-                span.ResourceName = "process.order";
-                span.SetTag("order.id", order.OrderId);
-                span.SetTag("order.customer", order.CustomerName);
-                span.SetTag("order.product", order.ProductName);
-                span.SetTag("messaging.system", "msmq");
-                span.SetTag("messaging.operation", "process");
-                
-                try
-                {
-                    _logger.LogInformation($"Processing order: {order.OrderId}");
-                    _logger.LogInformation($"Customer: {order.CustomerName}, Product: {order.ProductName}, Quantity: {order.Quantity}, Amount: ${order.TotalAmount}");
+                _logger.LogInformation($"Processing order: {order.OrderId}");
+                _logger.LogInformation($"Customer: {order.CustomerName}, Product: {order.ProductName}, Quantity: {order.Quantity}, Amount: ${order.TotalAmount}");
 
-                    // Simulate some processing work
-                    await Task.Delay(TimeSpan.FromSeconds(1));
+                // Simulate some processing work
+                await Task.Delay(TimeSpan.FromSeconds(1));
 
-                    // Update order status
-                    order.Status = "Processed";
+                // Update order status
+                order.Status = "Processed";
 
-                    _logger.LogInformation($"Order {order.OrderId} processed successfully");
-                    
-                    span.SetTag("order.status", "processed");
-                }
-                catch (Exception ex)
-                {
-                    span.SetException(ex);
-                    span.SetTag("order.status", "failed");
-                    _logger.LogError(ex, $"Error processing order {order.OrderId}");
-                    order.Status = "Failed";
-                    throw;
-                }
+                _logger.LogInformation($"Order {order.OrderId} processed successfully");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Error processing order {order.OrderId}");
+                order.Status = "Failed";
+                throw;
             }
         }
     }

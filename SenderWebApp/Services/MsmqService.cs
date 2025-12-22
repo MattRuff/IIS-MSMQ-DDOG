@@ -1,6 +1,5 @@
 using System;
 using System.Messaging;
-using Datadog.Trace;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
@@ -45,43 +44,27 @@ namespace SenderWebApp.Services
 
         public void SendMessage(OrderMessage message)
         {
-            // Create a Datadog span for MSMQ send operation
-            using (var scope = Tracer.Instance.StartActive("msmq.send"))
+            try
             {
-                var span = scope.Span;
-                span.Type = "queue"; // Use string instead of SpanTypes constant for .NET Framework compatibility
-                span.ResourceName = "send.order";
-                span.SetTag("order.id", message.OrderId);
-                span.SetTag("order.customer", message.CustomerName);
-                span.SetTag("messaging.system", "msmq");
-                span.SetTag("messaging.destination", _queuePath);
-                span.SetTag("messaging.operation", "send");
-                
-                try
+                using (var queue = new MessageQueue(_queuePath))
                 {
-                    using (var queue = new MessageQueue(_queuePath))
+                    queue.Formatter = new XmlMessageFormatter(new Type[] { typeof(string) });
+                    
+                    var jsonMessage = JsonConvert.SerializeObject(message);
+                    var msmqMessage = new Message(jsonMessage)
                     {
-                        queue.Formatter = new XmlMessageFormatter(new Type[] { typeof(string) });
-                        
-                        var jsonMessage = JsonConvert.SerializeObject(message);
-                        var msmqMessage = new Message(jsonMessage)
-                        {
-                            Label = $"Order-{message.OrderId}",
-                            Recoverable = true // Ensures message persists across reboots
-                        };
+                        Label = $"Order-{message.OrderId}",
+                        Recoverable = true // Ensures message persists across reboots
+                    };
 
-                        queue.Send(msmqMessage);
-                        _logger.LogInformation($"Message sent successfully. OrderId: {message.OrderId}");
-                        
-                        span.SetTag("message.sent", "true");
-                    }
+                    queue.Send(msmqMessage);
+                    _logger.LogInformation($"Message sent successfully. OrderId: {message.OrderId}");
                 }
-                catch (Exception ex)
-                {
-                    span.SetException(ex);
-                    _logger.LogError(ex, $"Error sending message. OrderId: {message.OrderId}");
-                    throw;
-                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Error sending message. OrderId: {message.OrderId}");
+                throw;
             }
         }
 
