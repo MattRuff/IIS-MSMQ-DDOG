@@ -1,6 +1,7 @@
 using Experimental.System.Messaging;
 using Newtonsoft.Json;
 using SenderWebApp.Models;
+using Datadog.Trace;
 
 namespace SenderWebApp.Services
 {
@@ -41,27 +42,43 @@ namespace SenderWebApp.Services
 
         public void SendMessage(OrderMessage message)
         {
-            try
+            // Create a Datadog span for MSMQ send operation
+            using (var scope = Tracer.Instance.StartActive("msmq.send"))
             {
-                using (var queue = new MessageQueue(_queuePath))
+                var span = scope.Span;
+                span.Type = SpanTypes.MessageBroker;
+                span.ResourceName = "send.order";
+                span.SetTag("order.id", message.OrderId);
+                span.SetTag("order.customer", message.CustomerName);
+                span.SetTag("messaging.system", "msmq");
+                span.SetTag("messaging.destination", _queuePath);
+                span.SetTag("messaging.operation", "send");
+                
+                try
                 {
-                    queue.Formatter = new XmlMessageFormatter(new Type[] { typeof(string) });
-                    
-                    var jsonMessage = JsonConvert.SerializeObject(message);
-                    var msmqMessage = new Message(jsonMessage)
+                    using (var queue = new MessageQueue(_queuePath))
                     {
-                        Label = $"Order-{message.OrderId}",
-                        Recoverable = true // Ensures message persists across reboots
-                    };
+                        queue.Formatter = new XmlMessageFormatter(new Type[] { typeof(string) });
+                        
+                        var jsonMessage = JsonConvert.SerializeObject(message);
+                        var msmqMessage = new Message(jsonMessage)
+                        {
+                            Label = $"Order-{message.OrderId}",
+                            Recoverable = true // Ensures message persists across reboots
+                        };
 
-                    queue.Send(msmqMessage);
-                    _logger.LogInformation($"Message sent successfully. OrderId: {message.OrderId}");
+                        queue.Send(msmqMessage);
+                        _logger.LogInformation($"Message sent successfully. OrderId: {message.OrderId}");
+                        
+                        span.SetTag("message.sent", "true");
+                    }
                 }
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, $"Error sending message. OrderId: {message.OrderId}");
-                throw;
+                catch (Exception ex)
+                {
+                    span.SetException(ex);
+                    _logger.LogError(ex, $"Error sending message. OrderId: {message.OrderId}");
+                    throw;
+                }
             }
         }
 
