@@ -46,6 +46,10 @@ try
 
     var builder = WebApplication.CreateBuilder(args);
 
+    // CRITICAL: Set URLs explicitly before anything else (Windows Service doesn't load appsettings.json URLs reliably)
+    builder.WebHost.UseUrls("http://localhost:8082");
+    Log.Information("Configured to listen on http://localhost:8082");
+
     // Use Serilog for logging
     builder.Host.UseSerilog();
 
