@@ -23,38 +23,13 @@ namespace SenderWebApp.Services
                 if (!MessageQueue.Exists(_queuePath))
                 {
                     _logger.LogInformation($"Creating queue: {_queuePath}");
-                    var queue = MessageQueue.Create(_queuePath);
-                    
-                    // Grant NetworkService full permissions (for receiver service)
-                    try
-                    {
-                        queue.SetPermissions("NETWORK SERVICE", MessageQueueAccessRights.FullControl, AccessControlEntryType.Allow);
-                        _logger.LogInformation("Granted NETWORK SERVICE full permissions to queue");
-                    }
-                    catch (Exception permEx)
-                    {
-                        _logger.LogWarning(permEx, "Could not set NetworkService permissions - receiver may fail");
-                    }
-                    
+                    MessageQueue.Create(_queuePath);
                     _logger.LogInformation($"Queue created successfully: {_queuePath}");
+                    _logger.LogInformation("Note: Permissions for NetworkService should be set by install script");
                 }
                 else
                 {
                     _logger.LogInformation($"Queue already exists: {_queuePath}");
-                    
-                    // Ensure NetworkService has permissions on existing queue
-                    try
-                    {
-                        using (var queue = new MessageQueue(_queuePath))
-                        {
-                            queue.SetPermissions("NETWORK SERVICE", MessageQueueAccessRights.FullControl, AccessControlEntryType.Allow);
-                            _logger.LogInformation("Verified NETWORK SERVICE permissions on existing queue");
-                        }
-                    }
-                    catch (Exception permEx)
-                    {
-                        _logger.LogWarning(permEx, "Could not verify NetworkService permissions");
-                    }
                 }
             }
             catch (Exception ex)
