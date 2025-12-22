@@ -7,7 +7,7 @@ var gitCommitHash = Assembly.GetExecutingAssembly()
     .GetCustomAttributes<AssemblyMetadataAttribute>()
     .FirstOrDefault(a => a.Key == "GitCommitHash")?.Value ?? "unknown";
 
-// Configure Serilog with JSON formatting
+// Configure Serilog with JSON formatting and Datadog error fields
 Log.Logger = new LoggerConfiguration()
     .Enrich.FromLogContext()
     .Enrich.WithProperty("service", "ReceiverWebApp")
@@ -15,6 +15,7 @@ Log.Logger = new LoggerConfiguration()
     .Enrich.WithProperty("dd.service", "ReceiverWebApp")
     .Enrich.WithProperty("dd.version", gitCommitHash)
     .Enrich.WithProperty("dd.env", Environment.GetEnvironmentVariable("DD_ENV") ?? "development")
+    .Enrich.With<ReceiverWebApp.DatadogExceptionEnricher>()
     .WriteTo.Console(new CompactJsonFormatter())
     .CreateLogger();
 
