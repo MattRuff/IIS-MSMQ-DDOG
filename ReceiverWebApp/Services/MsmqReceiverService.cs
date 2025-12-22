@@ -33,19 +33,8 @@ namespace ReceiverWebApp.Services
                 tempQueue = new MessageQueue(_queuePath);
                 tempQueue.Formatter = new XmlMessageFormatter(new Type[] { typeof(string) });
 
-                // Try to peek first to see if there are messages
-                try
-                {
-                    tempQueue.Peek(TimeSpan.FromMilliseconds(100));
-                }
-                catch (MessageQueueException peekEx) when (peekEx.MessageQueueErrorCode == MessageQueueErrorCode.IOTimeout)
-                {
-                    // No messages available
-                    return null;
-                }
-
-                // If peek succeeded, receive the message
-                var message = tempQueue.Receive(TimeSpan.FromSeconds(1));
+                // Receive directly with short timeout - Peek() has bugs in Experimental.System.Messaging
+                var message = tempQueue.Receive(TimeSpan.FromMilliseconds(500));
                 
                 if (message.Body is string jsonMessage)
                 {
