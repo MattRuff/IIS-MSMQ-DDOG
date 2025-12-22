@@ -99,13 +99,10 @@ Write-Host '========================================' -ForegroundColor Cyan
 # Optional: Additional Datadog settings
 `$env:DD_LOGS_INJECTION='true'
 `$env:DD_RUNTIME_METRICS_ENABLED='true'
-`$env:DD_ENV='testing'
-`$env:DD_SERVICE='msmq-demo'
 
 Write-Host 'Datadog Profiler: ENABLED' -ForegroundColor Green
 Write-Host 'Logs Injection: ENABLED' -ForegroundColor Green
 Write-Host 'Runtime Metrics: ENABLED' -ForegroundColor Green
-Write-Host 'Environment: testing' -ForegroundColor Green
 Write-Host '' 
 
 "@
