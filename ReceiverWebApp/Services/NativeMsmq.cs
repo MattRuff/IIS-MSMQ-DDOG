@@ -92,6 +92,8 @@ public static class NativeMsmq
         
         try
         {
+            int hr;
+            
             // For private queues, use direct format name
             // Convert .\private$\OrderQueue to DIRECT=OS:.\private$\OrderQueue
             string formatName;
@@ -107,7 +109,7 @@ public static class NativeMsmq
                 // Try to convert path to format name
                 var formatNameBuilder = new StringBuilder(256);
                 int formatNameLength = formatNameBuilder.Capacity;
-                int hr = MQPathNameToFormatName(queuePath, formatNameBuilder, ref formatNameLength);
+                hr = MQPathNameToFormatName(queuePath, formatNameBuilder, ref formatNameLength);
                 
                 if (hr != MQ_OK)
                 {
@@ -120,9 +122,9 @@ public static class NativeMsmq
             }
             
             // Open the queue
-            int hr2 = MQOpenQueue(formatName, MQ_RECEIVE_ACCESS, MQ_DENY_NONE, out hQueue);
-            if (hr2 != MQ_OK)
-                throw new Exception($"MQOpenQueue failed: 0x{hr2:X} for format name: {formatName}");
+            hr = MQOpenQueue(formatName, MQ_RECEIVE_ACCESS, MQ_DENY_NONE, out hQueue);
+            if (hr != MQ_OK)
+                throw new Exception($"MQOpenQueue failed: 0x{hr:X} for format name: {formatName}");
             
             // Allocate buffers for message body and label
             const int maxBodySize = 4194304; // 4MB max
