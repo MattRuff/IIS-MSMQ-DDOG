@@ -24,8 +24,8 @@ public static class NativeMsmq
     private const int PROPID_M_BODY_TYPE = 42;
     private const int PROPID_M_LABEL = 11;
     
-    private const byte VT_VECTOR = 0x1000;
-    private const byte VT_UI1 = 17;
+    private const ushort VT_VECTOR = 0x1000;
+    private const ushort VT_UI1 = 17;
     
     [StructLayout(LayoutKind.Sequential)]
     private struct MQMSGPROPS

@@ -12,7 +12,7 @@ var appDirectory = AppContext.BaseDirectory;
 var logPath = Path.Combine(appDirectory, "logs", "sender-.json");
 
 // Configure Serilog with JSON formatting, file, and Windows Event Log
-Log.Logger = new LoggerConfiguration()
+var loggerConfig = new LoggerConfiguration()
     .Enrich.FromLogContext()
     .Enrich.WithProperty("service", "SenderWebApp")
     .Enrich.WithProperty("version", gitCommitHash)
@@ -26,13 +26,19 @@ Log.Logger = new LoggerConfiguration()
         path: logPath,
         rollingInterval: RollingInterval.Day,
         retainedFileCountLimit: 7,
-        buffered: false)
-    .WriteTo.EventLog(
+        buffered: false);
+
+// Add Event Log sink only on Windows
+if (OperatingSystem.IsWindows())
+{
+    loggerConfig.WriteTo.EventLog(
         source: "SenderWebApp",
         logName: "Application",
         manageEventSource: true,
-        restrictedToMinimumLevel: Serilog.Events.LogEventLevel.Information)
-    .CreateLogger();
+        restrictedToMinimumLevel: Serilog.Events.LogEventLevel.Information);
+}
+
+Log.Logger = loggerConfig.CreateLogger();
 
 try
 {
