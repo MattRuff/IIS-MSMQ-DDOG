@@ -1,3 +1,5 @@
+using System;
+
 namespace ReceiverWebApp.Models
 {
     public class OrderMessage

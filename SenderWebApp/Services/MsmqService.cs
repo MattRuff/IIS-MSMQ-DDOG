@@ -1,7 +1,10 @@
+using System;
 using System.Messaging;
+using Datadog.Trace;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using SenderWebApp.Models;
-using Datadog.Trace;
 
 namespace SenderWebApp.Services
 {
