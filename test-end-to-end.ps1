@@ -31,11 +31,11 @@ Write-Host "   Messages in queue: $initialCount" -ForegroundColor Cyan
 # 3. Send a test order
 Write-Host "`n3. Sending Test Order..." -ForegroundColor Yellow
 try {
-    $response = Invoke-RestMethod -Uri "http://localhost:8081/api/order/test" -Method Post
-    Write-Host "   [OK] Order sent: $($response.orderId)" -ForegroundColor Green
-    Write-Host "   Customer: $($response.customerName)" -ForegroundColor Gray
-    Write-Host "   Status: $($response.status)" -ForegroundColor Gray
-    $testOrderId = $response.orderId
+    $response = Invoke-RestMethod -Uri "http://localhost:8081/api/order/test" -Method Get
+    Write-Host "   [OK] Order sent: $($response.order.orderId)" -ForegroundColor Green
+    Write-Host "   Customer: $($response.order.customerName)" -ForegroundColor Gray
+    Write-Host "   Status: $($response.order.status)" -ForegroundColor Gray
+    $testOrderId = $response.order.orderId
 } catch {
     Write-Host "   [ERROR] Failed to send order: $($_.Exception.Message)" -ForegroundColor Red
     exit 1
