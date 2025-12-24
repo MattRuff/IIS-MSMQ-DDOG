@@ -1,26 +1,24 @@
 using System;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Logging;
+using System.Web.Http;
+using Serilog;
 using SenderWebApp.Models;
 using SenderWebApp.Services;
 
 namespace SenderWebApp.Controllers
 {
-    [ApiController]
-    [Route("api/[controller]")]
-    public class OrderController : ControllerBase
+    [RoutePrefix("api/order")]
+    public class OrderController : ApiController
     {
         private readonly IMsmqService _msmqService;
-        private readonly ILogger<OrderController> _logger;
 
-        public OrderController(IMsmqService msmqService, ILogger<OrderController> logger)
+        public OrderController(IMsmqService msmqService)
         {
             _msmqService = msmqService;
-            _logger = logger;
         }
 
         [HttpPost]
-        public IActionResult CreateOrder([FromBody] OrderMessage order)
+        [Route("")]
+        public IHttpActionResult CreateOrder([FromBody] OrderMessage order)
         {
             try
             {
@@ -34,12 +32,12 @@ namespace SenderWebApp.Controllers
                     order.OrderDate = DateTime.UtcNow;
                 }
 
-                _logger.LogInformation($"Received order request: {order.OrderId}");
+                Log.Information("Received order request: {OrderId}", order.OrderId);
 
                 // Send message to MSMQ
                 _msmqService.SendMessage(order);
 
-                _logger.LogInformation($"Order {order.OrderId} sent to queue successfully");
+                Log.Information("Order {OrderId} sent to queue successfully", order.OrderId);
 
                 return Ok(new
                 {
@@ -51,8 +49,8 @@ namespace SenderWebApp.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error processing order");
-                return StatusCode(500, new
+                Log.Error(ex, "Error processing order");
+                return Content(System.Net.HttpStatusCode.InternalServerError, new
                 {
                     success = false,
                     message = "Error processing order",
@@ -61,8 +59,9 @@ namespace SenderWebApp.Controllers
             }
         }
 
-        [HttpGet("health")]
-        public IActionResult Health()
+        [HttpGet]
+        [Route("health")]
+        public IHttpActionResult Health()
         {
             var queueAvailable = _msmqService.IsQueueAvailable();
             return Ok(new
@@ -73,8 +72,9 @@ namespace SenderWebApp.Controllers
             });
         }
 
-        [HttpGet("test")]
-        public IActionResult SendTestOrder()
+        [HttpGet]
+        [Route("test")]
+        public IHttpActionResult SendTestOrder()
         {
             try
             {
@@ -100,8 +100,8 @@ namespace SenderWebApp.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error sending test order");
-                return StatusCode(500, new
+                Log.Error(ex, "Error sending test order");
+                return Content(System.Net.HttpStatusCode.InternalServerError, new
                 {
                     success = false,
                     message = "Error sending test order",

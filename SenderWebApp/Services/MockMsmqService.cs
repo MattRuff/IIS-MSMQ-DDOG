@@ -1,5 +1,5 @@
 using System.Collections.Concurrent;
-using Microsoft.Extensions.Logging;
+using Serilog;
 using SenderWebApp.Models;
 
 namespace SenderWebApp.Services
@@ -10,34 +10,25 @@ namespace SenderWebApp.Services
     /// </summary>
     public class MockMsmqService : IMsmqService
     {
-        private readonly ILogger<MockMsmqService> _logger;
-        private static readonly ConcurrentQueue<OrderMessage> _mockQueue = new ConcurrentQueue<OrderMessage>();
+        // Public static queue so ReceiverWebApp can access it
+        public static readonly ConcurrentQueue<OrderMessage> InMemoryQueue = new ConcurrentQueue<OrderMessage>();
 
-        public MockMsmqService(ILogger<MockMsmqService> logger)
+        public MockMsmqService()
         {
-            _logger = logger;
-            _logger.LogWarning("⚠️  Using MOCK MSMQ Service - messages stored in memory only!");
+            Log.Warning("Using MOCK MSMQ Service - messages stored in memory only!");
         }
 
         public void SendMessage(OrderMessage message)
         {
-            _mockQueue.Enqueue(message);
-            _logger.LogInformation($"[MOCK] Message sent to in-memory queue. OrderId: {message.OrderId}");
-            _logger.LogInformation($"[MOCK] Queue depth: {_mockQueue.Count}");
+            InMemoryQueue.Enqueue(message);
+            Log.Information("[MOCK] Message sent to in-memory queue. OrderId: {OrderId}", message.OrderId);
+            Log.Information("[MOCK] Queue depth: {QueueDepth}", InMemoryQueue.Count);
         }
 
         public bool IsQueueAvailable()
         {
-            _logger.LogInformation("[MOCK] Queue is always available (in-memory)");
+            Log.Information("[MOCK] Queue is always available (in-memory)");
             return true;
-        }
-
-        public static int GetQueueCount() => _mockQueue.Count;
-        
-        public static bool TryDequeue(out OrderMessage message)
-        {
-            return _mockQueue.TryDequeue(out message);
         }
     }
 }
-

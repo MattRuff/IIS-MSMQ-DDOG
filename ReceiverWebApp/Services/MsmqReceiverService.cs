@@ -1,9 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.Messaging;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
+using Serilog;
 using ReceiverWebApp.Models;
 
 namespace ReceiverWebApp.Services
@@ -23,7 +22,6 @@ namespace ReceiverWebApp.Services
     public class MsmqReceiverService : IMsmqReceiverService, IDisposable
     {
         private readonly string _queuePath;
-        private readonly ILogger<MsmqReceiverService> _logger;
         private readonly object _queueLock = new object();
         private readonly Queue<OrderMessage> _receivedMessages = new Queue<OrderMessage>();
         private readonly object _messagesLock = new object();
@@ -31,11 +29,10 @@ namespace ReceiverWebApp.Services
         private MessageQueue _queue;
         private bool _isStarted = false;
 
-        public MsmqReceiverService(IConfiguration configuration, ILogger<MsmqReceiverService> _logger)
+        public MsmqReceiverService()
         {
-            _queuePath = configuration["MSMQ:QueuePath"] ?? @".\private$\OrderQueue";
-            this._logger = _logger;
-            _logger.LogInformation("MsmqReceiverService initialized with EVENT-DRIVEN architecture. Queue: {QueuePath}", _queuePath);
+            _queuePath = @".\private$\OrderQueue";
+            Log.Information("MsmqReceiverService initialized with EVENT-DRIVEN architecture. Queue: {QueuePath}", _queuePath);
         }
 
         public void Start()
@@ -44,112 +41,99 @@ namespace ReceiverWebApp.Services
             {
                 if (_isStarted)
                 {
-                    _logger.LogWarning("Service already started, ignoring duplicate Start() call");
+                    Log.Warning("Service already started, ignoring duplicate Start() call");
                     return;
+                }
+
+                if (!MessageQueue.Exists(_queuePath))
+                {
+                    Log.Warning("Queue does not exist: {QueuePath}", _queuePath);
+                    throw new InvalidOperationException($"Queue does not exist: {_queuePath}. Ensure the Sender application has created the queue.");
                 }
 
                 try
                 {
-                    if (!MessageQueue.Exists(_queuePath))
-                    {
-                        _logger.LogError("Queue does not exist: {QueuePath}", _queuePath);
-                        throw new InvalidOperationException($"Queue does not exist: {_queuePath}");
-                    }
-
-                    _queue = new MessageQueue(_queuePath)
-                    {
-                        Formatter = new XmlMessageFormatter(new Type[] { typeof(string) })
-                    };
-
-                    // Set up event-driven receive
+                    _queue = new MessageQueue(_queuePath);
+                    _queue.Formatter = new XmlMessageFormatter(new Type[] { typeof(string) });
+                    
+                    // Register event handler for async message receive
                     _queue.ReceiveCompleted += OnReceiveCompleted;
+                    
+                    // Start async receive operation
                     _queue.BeginReceive();
-
+                    
                     _isStarted = true;
-                    _logger.LogInformation("✓ Event-driven message receiver started successfully");
+                    Log.Information("MSMQ receiver started with event-driven processing");
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "✗ Failed to start event-driven receiver");
+                    Log.Error(ex, "Failed to start MSMQ receiver");
                     throw;
                 }
             }
         }
 
+        /// <summary>
+        /// Called by MSMQ when a message is available
+        /// </summary>
         private void OnReceiveCompleted(object sender, ReceiveCompletedEventArgs e)
-        {
-            try
-            {
-                var queue = (MessageQueue)sender;
-                var message = queue.EndReceive(e.AsyncResult);
-
-                if (message?.Body is string jsonBody)
-                {
-                    var orderMessage = JsonConvert.DeserializeObject<OrderMessage>(jsonBody);
-                    if (orderMessage != null)
-                    {
-                        lock (_messagesLock)
-                        {
-                            _receivedMessages.Enqueue(orderMessage);
-                        }
-                        _logger.LogInformation("EVENT: Received order {OrderId}, Customer: {Customer} (In-memory queue: {Count})", 
-                            orderMessage.OrderId, orderMessage.CustomerName, _receivedMessages.Count);
-                    }
-                }
-
-                // Start listening for the next message
-                queue.BeginReceive();
-            }
-            catch (MessageQueueException mqex)
-            {
-                _logger.LogError(mqex, "MSMQ error in event handler (Code: {Code}, HResult: 0x{HResult:X})", 
-                    mqex.MessageQueueErrorCode, mqex.HResult);
-                
-                // Try to restart receiving
-                TryRestartReceiving();
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Unexpected error in event handler");
-                
-                // Try to restart receiving
-                TryRestartReceiving();
-            }
-        }
-
-        private void TryRestartReceiving()
         {
             try
             {
                 lock (_queueLock)
                 {
-                    if (_isStarted && _queue != null)
+                    // End the async receive and get the message
+                    var message = _queue.EndReceive(e.AsyncResult);
+                    
+                    // Deserialize
+                    var jsonMessage = message.Body.ToString();
+                    var order = JsonConvert.DeserializeObject<OrderMessage>(jsonMessage);
+                    
+                    if (order != null)
                     {
-                        _queue.BeginReceive();
-                        _logger.LogInformation("Restarted receiving after error");
+                        // Store in in-memory queue for background processor
+                        lock (_messagesLock)
+                        {
+                            _receivedMessages.Enqueue(order);
+                        }
+                        
+                        Log.Information("Message received from MSMQ and enqueued. OrderId: {OrderId}", order.OrderId);
                     }
+                    
+                    // Start waiting for the next message
+                    _queue.BeginReceive();
                 }
             }
-            catch (Exception restartEx)
+            catch (Exception ex)
             {
-                _logger.LogError(restartEx, "Failed to restart receiving - service may need manual restart");
+                Log.Error(ex, "Error processing received message");
+                
+                // Try to restart receiving despite the error
+                try
+                {
+                    lock (_queueLock)
+                    {
+                        _queue.BeginReceive();
+                    }
+                }
+                catch (Exception innerEx)
+                {
+                    Log.Error(innerEx, "Failed to restart receiving after error");
+                }
             }
         }
 
         public OrderMessage ReceiveMessage()
         {
-            // This now pulls from the in-memory queue, NOT from MSMQ directly
             lock (_messagesLock)
             {
                 if (_receivedMessages.Count > 0)
                 {
-                    var msg = _receivedMessages.Dequeue();
-                    _logger.LogDebug("Dequeued message {OrderId} from in-memory buffer (Remaining: {Count})", 
-                        msg.OrderId, _receivedMessages.Count);
-                    return msg;
+                    return _receivedMessages.Dequeue();
                 }
-                return null;
             }
+            
+            return null;
         }
 
         public bool IsQueueAvailable()
@@ -158,31 +142,17 @@ namespace ReceiverWebApp.Services
             {
                 return MessageQueue.Exists(_queuePath);
             }
-            catch (Exception ex)
+            catch
             {
-                _logger.LogError(ex, "Error checking queue availability");
                 return false;
             }
         }
 
         public int GetMessageCount()
         {
-            lock (_queueLock)
+            lock (_messagesLock)
             {
-                try
-                {
-                    if (_queue == null || !MessageQueue.Exists(_queuePath))
-                    {
-                        return 0;
-                    }
-
-                    return _queue.GetAllMessages().Length;
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex, "Error getting message count");
-                    return 0;
-                }
+                return _receivedMessages.Count;
             }
         }
 
@@ -190,20 +160,12 @@ namespace ReceiverWebApp.Services
         {
             lock (_queueLock)
             {
-                try
+                if (_queue != null)
                 {
-                    _isStarted = false;
-                    if (_queue != null)
-                    {
-                        _queue.ReceiveCompleted -= OnReceiveCompleted;
-                        _queue.Dispose();
-                        _queue = null;
-                    }
-                    _logger.LogInformation("Queue disposed successfully");
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex, "Error disposing queue");
+                    _queue.ReceiveCompleted -= OnReceiveCompleted;
+                    _queue.Close();
+                    _queue.Dispose();
+                    _queue = null;
                 }
             }
         }

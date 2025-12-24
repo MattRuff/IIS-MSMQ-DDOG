@@ -1,95 +1,81 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
+using Serilog;
 using ReceiverWebApp.Models;
 
 namespace ReceiverWebApp.Services
 {
-    public class MessageProcessorService : BackgroundService
+    public class MessageProcessorService : IDisposable
     {
         private readonly IMsmqReceiverService _msmqReceiverService;
-        private readonly ILogger<MessageProcessorService> _logger;
-        private readonly IConfiguration _configuration;
+        private Timer _timer;
+        private bool _isProcessing;
+        private bool _disposed;
 
-        public MessageProcessorService(
-            IMsmqReceiverService msmqReceiverService,
-            ILogger<MessageProcessorService> logger,
-            IConfiguration configuration)
+        public MessageProcessorService(IMsmqReceiverService msmqReceiverService)
         {
             _msmqReceiverService = msmqReceiverService;
-            _logger = logger;
-            _configuration = configuration;
         }
 
-        protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+        public void Start()
         {
-            _logger.LogInformation("Message Processor Service starting...");
+            Log.Information("Message Processor Service starting...");
 
             try
             {
                 // Start the receiver (event-driven for real MSMQ, no-op for mock)
                 _msmqReceiverService.Start();
-                _logger.LogInformation("MSMQ receiver started");
+                Log.Information("MSMQ receiver started");
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Failed to start MSMQ receiver - service cannot function");
+                Log.Error(ex, "Failed to start MSMQ receiver - service cannot function");
                 return;
             }
 
-            _logger.LogInformation("Message Processor Service ready, monitoring in-memory queue...");
+            Log.Information("Message Processor Service ready, monitoring in-memory queue...");
 
-            while (!stoppingToken.IsCancellationRequested)
+            // Start timer to process messages every 500ms
+            _timer = new Timer(ProcessMessages, null, TimeSpan.Zero, TimeSpan.FromMilliseconds(500));
+        }
+
+        private void ProcessMessages(object state)
+        {
+            if (_isProcessing || _disposed)
             {
-                try
-                {
-                    // Pull from in-memory queue (filled by MSMQ events)
-                    var message = _msmqReceiverService.ReceiveMessage();
-
-                    if (message != null)
-                    {
-                        await ProcessOrder(message);
-                    }
-                    else
-                    {
-                        // No messages in buffer, check again soon
-                        await Task.Delay(TimeSpan.FromMilliseconds(500), stoppingToken);
-                    }
-                }
-                catch (OperationCanceledException)
-                {
-                    // Service is stopping - this is normal, don't log as error
-                    break;
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex, "Error in message processing loop");
-                    
-                    try
-                    {
-                        // Delay after errors to allow recovery
-                        await Task.Delay(TimeSpan.FromSeconds(5), stoppingToken);
-                    }
-                    catch (OperationCanceledException)
-                    {
-                        // Service stopping during error delay
-                        break;
-                    }
-                }
+                return;
             }
 
-            _logger.LogInformation("Message Processor Service stopped");
+            _isProcessing = true;
+
+            try
+            {
+                // Pull from in-memory queue (filled by MSMQ events)
+                var message = _msmqReceiverService.ReceiveMessage();
+
+                if (message != null)
+                {
+                    ProcessOrder(message).Wait();
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "Error in message processing loop");
+            }
+            finally
+            {
+                _isProcessing = false;
+            }
         }
 
         private async Task ProcessOrder(OrderMessage order)
         {
             try
             {
-                _logger.LogInformation($"Processing order: {order.OrderId}");
-                _logger.LogInformation($"Customer: {order.CustomerName}, Product: {order.ProductName}, Quantity: {order.Quantity}, Amount: ${order.TotalAmount}");
+                Log.Information("Processing order: {OrderId}", order.OrderId);
+                Log.Information("Customer: {CustomerName}, Product: {ProductName}, Quantity: {Quantity}, Amount: ${TotalAmount}", 
+                    order.CustomerName, order.ProductName, order.Quantity, order.TotalAmount);
 
                 // Simulate some processing work
                 await Task.Delay(TimeSpan.FromSeconds(1));
@@ -97,13 +83,29 @@ namespace ReceiverWebApp.Services
                 // Update order status
                 order.Status = "Processed";
 
-                _logger.LogInformation($"Order {order.OrderId} processed successfully");
+                Log.Information("Order {OrderId} processed successfully", order.OrderId);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, $"Error processing order {order.OrderId}");
+                Log.Error(ex, "Error processing order {OrderId}", order.OrderId);
                 order.Status = "Failed";
                 throw;
+            }
+        }
+
+        public void Stop()
+        {
+            Log.Information("Message Processor Service stopping...");
+            _timer?.Change(Timeout.Infinite, Timeout.Infinite);
+            Log.Information("Message Processor Service stopped");
+        }
+
+        public void Dispose()
+        {
+            if (!_disposed)
+            {
+                _disposed = true;
+                _timer?.Dispose();
             }
         }
     }

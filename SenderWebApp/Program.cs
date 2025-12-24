@@ -2,10 +2,10 @@ using System;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using Microsoft.AspNetCore;
-using Microsoft.AspNetCore.Hosting;
+using Microsoft.Owin.Hosting;
 using Serilog;
 using Serilog.Formatting.Compact;
+using SenderWebApp.Services;
 
 namespace SenderWebApp
 {
@@ -55,7 +55,34 @@ namespace SenderWebApp
             try
             {
                 Log.Information("Starting SenderWebApp with version {Version}", gitCommitHash);
-                CreateWebHostBuilder(args).Build().Run();
+
+                // Initialize MSMQ Service
+                IMsmqService msmqService;
+                if (Environment.OSVersion.Platform == PlatformID.Win32NT)
+                {
+                    msmqService = new MsmqService();
+                    Log.Information("Using real MSMQ service");
+                }
+                else
+                {
+                    msmqService = new MockMsmqService();
+                    Log.Information("Using mock MSMQ service");
+                }
+
+                // Start OWIN web server
+                string baseAddress = "http://localhost:8081/";
+                
+                using (WebApp.Start(baseAddress, app =>
+                {
+                    var startup = new OwinStartup(msmqService);
+                    startup.Configuration(app);
+                }))
+                {
+                    Log.Information("Sender Web API running on {BaseAddress}", baseAddress);
+                    Console.WriteLine($"Sender Web API running on {baseAddress}");
+                    Console.WriteLine("Press Enter to quit.");
+                    Console.ReadLine();
+                }
             }
             catch (Exception ex)
             {
@@ -66,11 +93,5 @@ namespace SenderWebApp
                 Log.CloseAndFlush();
             }
         }
-
-        public static IWebHostBuilder CreateWebHostBuilder(string[] args) =>
-            WebHost.CreateDefaultBuilder(args)
-                .UseUrls("http://localhost:8081")
-                .UseSerilog()
-                .UseStartup<Startup>();
     }
 }

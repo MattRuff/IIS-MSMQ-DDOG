@@ -1,58 +1,55 @@
 using System.Collections.Concurrent;
-using Microsoft.Extensions.Logging;
-using ReceiverWebApp.Models;
+using Serilog;
+using SenderWebApp.Services; // Access the MockMsmqService's queue
+using OrderMessageSender = SenderWebApp.Models.OrderMessage;
+using OrderMessageReceiver = ReceiverWebApp.Models.OrderMessage;
 
 namespace ReceiverWebApp.Services
 {
-    /// <summary>
-    /// Mock MSMQ receiver service for local testing without Windows MSMQ
-    /// This uses an in-memory queue instead of real MSMQ
-    /// </summary>
     public class MockMsmqReceiverService : IMsmqReceiverService
     {
-        private readonly ILogger<MockMsmqReceiverService> _logger;
-        private static readonly ConcurrentQueue<OrderMessage> _mockQueue = new ConcurrentQueue<OrderMessage>();
+        private readonly ConcurrentQueue<OrderMessageSender> _queue;
 
-        public MockMsmqReceiverService(ILogger<MockMsmqReceiverService> logger)
+        public MockMsmqReceiverService()
         {
-            _logger = logger;
-            _logger.LogWarning("⚠️  Using MOCK MSMQ Receiver Service - messages from in-memory queue only!");
+            // Share the same in-memory queue as MockMsmqService
+            _queue = MockMsmqService.InMemoryQueue;
+            Log.Information("MockMsmqReceiverService initialized - Using shared in-memory queue");
         }
 
         public void Start()
         {
-            _logger.LogInformation("[MOCK] Start() called - no-op for mock service");
+            // No-op for mock - queue is already available
         }
 
-        public OrderMessage ReceiveMessage()
+        public OrderMessageReceiver ReceiveMessage()
         {
-            if (_mockQueue.TryDequeue(out var message))
+            OrderMessageSender message;
+            if (_queue.TryDequeue(out message))
             {
-                _logger.LogInformation($"[MOCK] Message received from in-memory queue. OrderId: {message?.OrderId}");
-                return message;
+                // Convert from Sender model to Receiver model
+                return new OrderMessageReceiver
+                {
+                    OrderId = message.OrderId,
+                    CustomerName = message.CustomerName,
+                    ProductName = message.ProductName,
+                    Quantity = message.Quantity,
+                    TotalAmount = message.TotalAmount,
+                    OrderDate = message.OrderDate,
+                    Status = message.Status
+                };
             }
-            
-            // No messages available
             return null;
         }
 
         public bool IsQueueAvailable()
         {
-            _logger.LogInformation("[MOCK] Queue is always available (in-memory)");
-            return true;
+            return true; // Mock queue is always "available"
         }
 
         public int GetMessageCount()
         {
-            var count = _mockQueue.Count;
-            _logger.LogInformation($"[MOCK] Messages in queue: {count}");
-            return count;
-        }
-
-        public static void EnqueueMessage(OrderMessage message)
-        {
-            _mockQueue.Enqueue(message);
+            return _queue.Count;
         }
     }
 }
-

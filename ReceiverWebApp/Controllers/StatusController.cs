@@ -1,25 +1,23 @@
 using System;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Logging;
+using System.Web.Http;
+using Serilog;
 using ReceiverWebApp.Services;
 
 namespace ReceiverWebApp.Controllers
 {
-    [ApiController]
-    [Route("api/[controller]")]
-    public class StatusController : ControllerBase
+    [RoutePrefix("api/status")]
+    public class StatusController : ApiController
     {
         private readonly IMsmqReceiverService _msmqReceiverService;
-        private readonly ILogger<StatusController> _logger;
 
-        public StatusController(IMsmqReceiverService msmqReceiverService, ILogger<StatusController> logger)
+        public StatusController(IMsmqReceiverService msmqReceiverService)
         {
             _msmqReceiverService = msmqReceiverService;
-            _logger = logger;
         }
 
-        [HttpGet("health")]
-        public IActionResult Health()
+        [HttpGet]
+        [Route("health")]
+        public IHttpActionResult Health()
         {
             var queueAvailable = _msmqReceiverService.IsQueueAvailable();
             var messageCount = _msmqReceiverService.GetMessageCount();
@@ -33,8 +31,9 @@ namespace ReceiverWebApp.Controllers
             });
         }
 
-        [HttpGet("queue-status")]
-        public IActionResult QueueStatus()
+        [HttpGet]
+        [Route("queue-status")]
+        public IHttpActionResult QueueStatus()
         {
             try
             {
@@ -50,8 +49,8 @@ namespace ReceiverWebApp.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error getting queue status");
-                return StatusCode(500, new
+                Log.Error(ex, "Error getting queue status");
+                return Content(System.Net.HttpStatusCode.InternalServerError, new
                 {
                     success = false,
                     message = "Error getting queue status",

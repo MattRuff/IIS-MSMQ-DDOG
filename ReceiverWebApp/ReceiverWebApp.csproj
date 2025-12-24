@@ -17,15 +17,18 @@
   <ItemGroup>
     <!-- Native System.Messaging - built into .NET Framework! -->
     <Reference Include="System.Messaging" />
+    <Reference Include="System.Net.Http" />
+    <Reference Include="System.Web" />
     
-    <!-- ASP.NET Core 2.2 packages - compatible with .NET Framework 4.8 -->
-    <PackageReference Include="Microsoft.AspNetCore" Version="2.2.0" />
-    <PackageReference Include="Microsoft.AspNetCore.Mvc" Version="2.2.0" />
-    <PackageReference Include="Microsoft.AspNetCore.StaticFiles" Version="2.2.0" />
+    <!-- ASP.NET Web API 2 packages - auto-instrumented by Datadog! -->
+    <PackageReference Include="Microsoft.AspNet.WebApi.SelfHost" Version="5.3.0" />
+    <PackageReference Include="Microsoft.AspNet.WebApi.Owin" Version="5.3.0" />
+    <PackageReference Include="Microsoft.Owin.Host.HttpListener" Version="4.2.2" />
+    <PackageReference Include="Microsoft.Owin.Hosting" Version="4.2.2" />
     
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
-    <PackageReference Include="Swashbuckle.AspNetCore" Version="5.6.3" />
-    <PackageReference Include="Serilog.AspNetCore" Version="3.4.0" />
+    <PackageReference Include="Swashbuckle.Core" Version="5.6.0" />
+    <PackageReference Include="Serilog" Version="2.12.0" />
     <PackageReference Include="Serilog.Sinks.Console" Version="3.1.1" />
     <PackageReference Include="Serilog.Sinks.File" Version="4.1.0" />
     <PackageReference Include="Serilog.Sinks.EventLog" Version="3.1.0" />
@@ -37,6 +40,11 @@
       <_Parameter1>GitCommitHash</_Parameter1>
       <_Parameter2>$(GitCommitHash)</_Parameter2>
     </AssemblyAttribute>
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Reference to SenderWebApp for shared MockMsmqService.InMemoryQueue -->
+    <ProjectReference Include="..\SenderWebApp\SenderWebApp.csproj" />
   </ItemGroup>
 
 </Project>

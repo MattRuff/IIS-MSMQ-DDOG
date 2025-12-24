@@ -2,10 +2,10 @@ using System;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using Microsoft.AspNetCore;
-using Microsoft.AspNetCore.Hosting;
+using Microsoft.Owin.Hosting;
 using Serilog;
 using Serilog.Formatting.Compact;
+using ReceiverWebApp.Services;
 
 namespace ReceiverWebApp
 {
@@ -52,10 +52,43 @@ namespace ReceiverWebApp
 
             Log.Logger = loggerConfig.CreateLogger();
 
+            MessageProcessorService messageProcessor = null;
+
             try
             {
                 Log.Information("Starting ReceiverWebApp with version {Version}", gitCommitHash);
-                CreateWebHostBuilder(args).Build().Run();
+
+                // Initialize MSMQ Receiver Service
+                IMsmqReceiverService msmqReceiverService;
+                if (Environment.OSVersion.Platform == PlatformID.Win32NT)
+                {
+                    msmqReceiverService = new MsmqReceiverService();
+                    Log.Information("Using real MSMQ receiver service");
+                }
+                else
+                {
+                    msmqReceiverService = new MockMsmqReceiverService();
+                    Log.Information("Using mock MSMQ receiver service");
+                }
+
+                // Start message processor in background
+                messageProcessor = new MessageProcessorService(msmqReceiverService);
+                messageProcessor.Start();
+
+                // Start OWIN web server
+                string baseAddress = "http://localhost:8082/";
+                
+                using (WebApp.Start(baseAddress, app =>
+                {
+                    var startup = new OwinStartup(msmqReceiverService);
+                    startup.Configuration(app);
+                }))
+                {
+                    Log.Information("Receiver Web API running on {BaseAddress}", baseAddress);
+                    Console.WriteLine($"Receiver Web API running on {baseAddress}");
+                    Console.WriteLine("Press Enter to quit.");
+                    Console.ReadLine();
+                }
             }
             catch (Exception ex)
             {
@@ -63,14 +96,10 @@ namespace ReceiverWebApp
             }
             finally
             {
+                messageProcessor?.Stop();
+                messageProcessor?.Dispose();
                 Log.CloseAndFlush();
             }
         }
-
-        public static IWebHostBuilder CreateWebHostBuilder(string[] args) =>
-            WebHost.CreateDefaultBuilder(args)
-                .UseUrls("http://localhost:8082")
-                .UseSerilog()
-                .UseStartup<Startup>();
     }
 }

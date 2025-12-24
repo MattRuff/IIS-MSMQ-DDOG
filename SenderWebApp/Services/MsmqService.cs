@@ -1,8 +1,7 @@
 using System;
 using System.Messaging;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
+using Serilog;
 using SenderWebApp.Models;
 
 namespace SenderWebApp.Services
@@ -10,12 +9,10 @@ namespace SenderWebApp.Services
     public class MsmqService : IMsmqService
     {
         private readonly string _queuePath;
-        private readonly ILogger<MsmqService> _logger;
 
-        public MsmqService(IConfiguration configuration, ILogger<MsmqService> logger)
+        public MsmqService()
         {
-            _queuePath = configuration["MSMQ:QueuePath"] ?? @".\private$\OrderQueue";
-            _logger = logger;
+            _queuePath = @".\private$\OrderQueue";
             EnsureQueueExists();
         }
 
@@ -25,19 +22,19 @@ namespace SenderWebApp.Services
             {
                 if (!MessageQueue.Exists(_queuePath))
                 {
-                    _logger.LogInformation($"Creating queue: {_queuePath}");
+                    Log.Information("Creating queue: {QueuePath}", _queuePath);
                     MessageQueue.Create(_queuePath);
-                    _logger.LogInformation($"Queue created successfully: {_queuePath}");
-                    _logger.LogInformation("Note: Permissions for NetworkService should be set by install script");
+                    Log.Information("Queue created successfully: {QueuePath}", _queuePath);
+                    Log.Information("Note: Permissions for NetworkService should be set by install script");
                 }
                 else
                 {
-                    _logger.LogInformation($"Queue already exists: {_queuePath}");
+                    Log.Information("Queue already exists: {QueuePath}", _queuePath);
                 }
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, $"Error ensuring queue exists: {_queuePath}");
+                Log.Error(ex, "Error ensuring queue exists: {QueuePath}", _queuePath);
                 throw;
             }
         }
@@ -58,12 +55,12 @@ namespace SenderWebApp.Services
                     };
 
                     queue.Send(msmqMessage);
-                    _logger.LogInformation($"Message sent successfully. OrderId: {message.OrderId}");
+                    Log.Information("Message sent successfully. OrderId: {OrderId}", message.OrderId);
                 }
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, $"Error sending message. OrderId: {message.OrderId}");
+                Log.Error(ex, "Error sending message. OrderId: {OrderId}", message.OrderId);
                 throw;
             }
         }
@@ -76,7 +73,7 @@ namespace SenderWebApp.Services
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error checking queue availability");
+                Log.Error(ex, "Error checking queue availability");
                 return false;
             }
         }
