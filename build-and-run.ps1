@@ -100,9 +100,14 @@ Write-Host '========================================' -ForegroundColor Cyan
 `$env:DD_LOGS_INJECTION='true'
 `$env:DD_RUNTIME_METRICS_ENABLED='true'
 
+# Enable debug logging to troubleshoot MSMQ instrumentation
+`$env:DD_TRACE_DEBUG='true'
+`$env:DD_TRACE_LOG_DIRECTORY='C:\Temp\DatadogLogs'
+
 Write-Host 'Datadog Profiler: ENABLED' -ForegroundColor Green
 Write-Host 'Logs Injection: ENABLED' -ForegroundColor Green
 Write-Host 'Runtime Metrics: ENABLED' -ForegroundColor Green
+Write-Host 'Debug Logging: ENABLED (C:\Temp\DatadogLogs)' -ForegroundColor Yellow
 Write-Host '' 
 
 "@
