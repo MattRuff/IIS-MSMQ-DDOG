@@ -6,6 +6,9 @@ using ReceiverWebApp.Models;
 
 namespace ReceiverWebApp.Services
 {
+    /// <summary>
+    /// Continuously polls MSMQ using synchronous Receive() - auto-instrumented by Datadog
+    /// </summary>
     public class MessageProcessorService : IDisposable
     {
         private readonly IMsmqReceiverService _msmqReceiverService;
@@ -24,19 +27,19 @@ namespace ReceiverWebApp.Services
 
             try
             {
-                // Start the receiver (event-driven for real MSMQ, no-op for mock)
+                // Initialize the receiver
                 _msmqReceiverService.Start();
-                Log.Information("MSMQ receiver started");
+                Log.Information("MSMQ receiver initialized");
             }
             catch (Exception ex)
             {
-                Log.Error(ex, "Failed to start MSMQ receiver - service cannot function");
+                Log.Error(ex, "Failed to initialize MSMQ receiver - service cannot function");
                 return;
             }
 
-            Log.Information("Message Processor Service ready, monitoring in-memory queue...");
+            Log.Information("Message Processor Service ready - polling MSMQ with auto-instrumented Receive()...");
 
-            // Start timer to process messages every 500ms
+            // Start timer to continuously poll for messages
             _timer = new Timer(ProcessMessages, null, TimeSpan.Zero, TimeSpan.FromMilliseconds(500));
         }
 
@@ -51,7 +54,8 @@ namespace ReceiverWebApp.Services
 
             try
             {
-                // Pull from in-memory queue (filled by MSMQ events)
+                // Call synchronous Receive() - AUTO-INSTRUMENTED by Datadog
+                // This will create a msmq.receive span automatically
                 var message = _msmqReceiverService.ReceiveMessage();
 
                 if (message != null)

@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using System.Messaging;
 using Newtonsoft.Json;
 using Serilog;
@@ -8,129 +7,76 @@ using ReceiverWebApp.Models;
 namespace ReceiverWebApp.Services
 {
     /// <summary>
-    /// MSMQ Receiver with EVENT-DRIVEN architecture
+    /// MSMQ Receiver with SYNCHRONOUS Receive() - Auto-instrumented by Datadog
     /// 
-    /// PROBLEM: Synchronous polling in tight loop causes handle corruption under LocalSystem
-    /// SOLUTION: Use async BeginReceive/ReceiveCompleted event pattern - MSMQ manages handle lifecycle
-    /// 
-    /// This approach:
-    /// - No tight polling loop = no handle churn
-    /// - MSMQ internally manages the receive handle
-    /// - Messages are queued in-memory when received
-    /// - Background service pulls from in-memory queue (not MSMQ directly)
+    /// This uses System.Messaging.MessageQueue.Receive() which is automatically
+    /// instrumented by Datadog's .NET tracer. No manual instrumentation needed.
     /// </summary>
     public class MsmqReceiverService : IMsmqReceiverService, IDisposable
     {
         private readonly string _queuePath;
-        private readonly object _queueLock = new object();
-        private readonly Queue<OrderMessage> _receivedMessages = new Queue<OrderMessage>();
-        private readonly object _messagesLock = new object();
-        
         private MessageQueue _queue;
-        private bool _isStarted = false;
 
         public MsmqReceiverService()
         {
             _queuePath = @".\private$\OrderQueue";
-            Log.Information("MsmqReceiverService initialized with EVENT-DRIVEN architecture. Queue: {QueuePath}", _queuePath);
+            Log.Information("MsmqReceiverService initialized with SYNCHRONOUS Receive() for auto-instrumentation. Queue: {QueuePath}", _queuePath);
         }
 
         public void Start()
         {
-            lock (_queueLock)
+            if (!MessageQueue.Exists(_queuePath))
             {
-                if (_isStarted)
-                {
-                    Log.Warning("Service already started, ignoring duplicate Start() call");
-                    return;
-                }
+                Log.Warning("Queue does not exist: {QueuePath}", _queuePath);
+                throw new InvalidOperationException($"Queue does not exist: {_queuePath}. Ensure the Sender application has created the queue.");
+            }
 
-                if (!MessageQueue.Exists(_queuePath))
-                {
-                    Log.Warning("Queue does not exist: {QueuePath}", _queuePath);
-                    throw new InvalidOperationException($"Queue does not exist: {_queuePath}. Ensure the Sender application has created the queue.");
-                }
-
-                try
-                {
-                    _queue = new MessageQueue(_queuePath);
-                    _queue.Formatter = new XmlMessageFormatter(new Type[] { typeof(string) });
-                    
-                    // Register event handler for async message receive
-                    _queue.ReceiveCompleted += OnReceiveCompleted;
-                    
-                    // Start async receive operation
-                    _queue.BeginReceive();
-                    
-                    _isStarted = true;
-                    Log.Information("MSMQ receiver started with event-driven processing");
-                }
-                catch (Exception ex)
-                {
-                    Log.Error(ex, "Failed to start MSMQ receiver");
-                    throw;
-                }
+            try
+            {
+                _queue = new MessageQueue(_queuePath);
+                _queue.Formatter = new XmlMessageFormatter(new Type[] { typeof(string) });
+                
+                Log.Information("MSMQ receiver initialized - ready for synchronous Receive() calls");
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "Failed to initialize MSMQ receiver");
+                throw;
             }
         }
 
         /// <summary>
-        /// Called by MSMQ when a message is available
+        /// Synchronously receives a message from MSMQ with a timeout.
+        /// This method is AUTO-INSTRUMENTED by Datadog - creates msmq.receive spans automatically.
         /// </summary>
-        private void OnReceiveCompleted(object sender, ReceiveCompletedEventArgs e)
+        public OrderMessage ReceiveMessage()
         {
             try
             {
-                lock (_queueLock)
+                // Synchronous receive with 1 second timeout
+                // Datadog automatically instruments MessageQueue.Receive()
+                var message = _queue.Receive(TimeSpan.FromSeconds(1));
+                
+                if (message != null)
                 {
-                    // End the async receive and get the message
-                    var message = _queue.EndReceive(e.AsyncResult);
-                    
-                    // Deserialize
                     var jsonMessage = message.Body.ToString();
                     var order = JsonConvert.DeserializeObject<OrderMessage>(jsonMessage);
                     
                     if (order != null)
                     {
-                        // Store in in-memory queue for background processor
-                        lock (_messagesLock)
-                        {
-                            _receivedMessages.Enqueue(order);
-                        }
-                        
-                        Log.Information("Message received from MSMQ and enqueued. OrderId: {OrderId}", order.OrderId);
+                        Log.Information("Message received from MSMQ. OrderId: {OrderId}", order.OrderId);
+                        return order;
                     }
-                    
-                    // Start waiting for the next message
-                    _queue.BeginReceive();
                 }
+            }
+            catch (MessageQueueException ex) when (ex.MessageQueueErrorCode == MessageQueueErrorCode.IOTimeout)
+            {
+                // Timeout is normal - no message available
+                return null;
             }
             catch (Exception ex)
             {
-                Log.Error(ex, "Error processing received message");
-                
-                // Try to restart receiving despite the error
-                try
-                {
-                    lock (_queueLock)
-                    {
-                        _queue.BeginReceive();
-                    }
-                }
-                catch (Exception innerEx)
-                {
-                    Log.Error(innerEx, "Failed to restart receiving after error");
-                }
-            }
-        }
-
-        public OrderMessage ReceiveMessage()
-        {
-            lock (_messagesLock)
-            {
-                if (_receivedMessages.Count > 0)
-                {
-                    return _receivedMessages.Dequeue();
-                }
+                Log.Error(ex, "Error receiving message from queue");
             }
             
             return null;
@@ -150,23 +96,28 @@ namespace ReceiverWebApp.Services
 
         public int GetMessageCount()
         {
-            lock (_messagesLock)
+            try
             {
-                return _receivedMessages.Count;
+                if (_queue != null)
+                {
+                    return _queue.GetAllMessages().Length;
+                }
             }
+            catch (Exception ex)
+            {
+                Log.Warning(ex, "Could not get message count");
+            }
+            
+            return 0;
         }
 
         public void Dispose()
         {
-            lock (_queueLock)
+            if (_queue != null)
             {
-                if (_queue != null)
-                {
-                    _queue.ReceiveCompleted -= OnReceiveCompleted;
-                    _queue.Close();
-                    _queue.Dispose();
-                    _queue = null;
-                }
+                _queue.Close();
+                _queue.Dispose();
+                _queue = null;
             }
         }
     }

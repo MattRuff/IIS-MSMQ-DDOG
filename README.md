@@ -16,11 +16,12 @@ This project demonstrates Datadog's **automatic instrumentation** for ASP.NET We
 ### Flow
 1. **Sender App**: Receives HTTP requests and publishes messages to MSMQ
    - ✅ HTTP endpoints automatically traced by Datadog
-   - ✅ MSMQ send operations automatically traced
+   - ✅ MSMQ send operations automatically traced (`MessageQueue.Send()`)
 2. **MSMQ Queue**: Message broker (`.\private$\OrderQueue`)
-3. **Receiver App**: Background timer polls MSMQ and processes messages
+3. **Receiver App**: Background timer polls MSMQ using synchronous `Receive()`
    - ✅ HTTP endpoints automatically traced
-   - ❌ Background MSMQ receive NOT traced (no HTTP context)
+   - ⚠️ Background MSMQ receive (`MessageQueue.Receive()`) uses auto-instrumented library
+   - ❌ Background worker context may not generate traces (no HTTP parent span)
 
 ## Prerequisites
 
@@ -319,7 +320,7 @@ According to [Datadog's .NET Framework compatibility documentation](https://docs
 |-----------|--------|--------|
 | **Background Services** | ❌ Not Traced | No HTTP context |
 | **Timer-based Workers** | ❌ Not Traced | Runs outside HTTP request/response flow |
-| **Event-Driven MSMQ Receive** | ❌ Not Traced | `BeginReceive()`/`ReceiveCompleted` events run in background threads |
+| **Synchronous MSMQ Receive in Background** | ⚠️ **Testing** | Uses `MessageQueue.Receive()` (auto-instrumented), but runs in background Timer (no HTTP parent) |
 | **Message Processing Logic** | ❌ Not Traced | Happens in background `Timer`, not HTTP handler |
 
 ### 📊 What You'll Actually See
@@ -331,20 +332,21 @@ HTTP GET /api/order/test (SenderWebApp) ← Traced automatically
   └─ msmq.send .\private$\OrderQueue   ← Traced automatically
 ```
 
-**However, you will NOT see:**
+**You MAY or MAY NOT see:**
 ```
-❌ msmq.receive (ReceiverWebApp)       ← Not traced (background Timer)
+⚠️ msmq.receive (ReceiverWebApp)       ← Uses auto-instrumented MessageQueue.Receive()
+                                         but runs in background Timer without HTTP context
 ❌ process.order                        ← Not traced (background worker)
 ```
 
 ### Why This Happens
 
 1. **MSMQ Send is traced** because it happens **during the HTTP request** to `/api/order/test`
-2. **MSMQ Receive is NOT traced** because:
+2. **MSMQ Receive might not be traced** because:
    - The `ReceiverWebApp` uses a background `Timer` to poll MSMQ
    - Background workers run **outside HTTP request contexts**
-   - Datadog's auto-instrumentation focuses on **HTTP request/response flows**
-   - Event-driven patterns (`BeginReceive`/`ReceiveCompleted`) don't have HTTP parent spans
+   - While `MessageQueue.Receive()` itself is auto-instrumented, Datadog may not create traces for operations without a parent HTTP span
+   - This is an **experiment** to see if synchronous `Receive()` generates standalone traces
 
 ### ✅ Workaround: Generate HTTP Traffic to Receiver
 
