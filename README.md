@@ -1,27 +1,33 @@
 # IIS MSMQ Distributed Tracing Demo
 
-This project demonstrates a distributed tracing scenario using .NET IIS applications communicating via MSMQ (Microsoft Message Queue), ready for Datadog APM instrumentation.
+This project demonstrates Datadog's **automatic instrumentation** for ASP.NET Web API 2 applications with MSMQ (Microsoft Message Queue). It shows what can be traced automatically without code changes, and documents the limitations of auto-instrumentation for background workers.
 
 ## Architecture
 
 ```
 ┌─────────────────┐      MSMQ Queue       ┌─────────────────┐
 │  Sender App     │ ───────────────────►  │  Receiver App   │
-│  (Port 5001)    │   OrderQueue          │  (Port 5002)    │
-│  IIS Web API    │                       │  IIS Web API    │
+│  (Port 8081)    │   OrderQueue          │  (Port 8082)    │
+│  Web API 2      │                       │  Web API 2      │
 └─────────────────┘                       └─────────────────┘
+     ✅ Traced                                  ⚠️ HTTP only
 ```
 
 ### Flow
-1. **Sender App**: Receives HTTP POST requests and publishes messages to MSMQ
-2. **MSMQ Queue**: Message broker (.\private$\OrderQueue)
-3. **Receiver App**: Background service continuously polls MSMQ and processes messages
+1. **Sender App**: Receives HTTP requests and publishes messages to MSMQ
+   - ✅ HTTP endpoints automatically traced by Datadog
+   - ✅ MSMQ send operations automatically traced
+2. **MSMQ Queue**: Message broker (`.\private$\OrderQueue`)
+3. **Receiver App**: Background timer polls MSMQ and processes messages
+   - ✅ HTTP endpoints automatically traced
+   - ❌ Background MSMQ receive NOT traced (no HTTP context)
 
 ## Prerequisites
 
 ### Required
 - **Windows OS** (Windows 10/11 or Windows Server 2016+)
-- **.NET 8.0 SDK** or later ([Download](https://dotnet.microsoft.com/download/dotnet/8.0))
+- **.NET Framework 4.8 Developer Pack** ([Download](https://dotnet.microsoft.com/download/dotnet-framework/net48))
+- **.NET SDK** (for building) ([Download](https://dotnet.microsoft.com/download))
 - **PowerShell 5.1** or later (included with Windows)
 - **Administrator privileges** (for MSMQ installation)
 
@@ -90,7 +96,7 @@ curl http://localhost:8082/api/status/health
 
 ## API Endpoints
 
-### Sender Application (Port 5001)
+### Sender Application (Port 8081)
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
@@ -113,7 +119,7 @@ $body = @{
 Invoke-RestMethod -Uri "http://localhost:8081/api/order" -Method Post -Body $body -ContentType "application/json"
 ```
 
-### Receiver Application (Port 5002)
+### Receiver Application (Port 8082)
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
@@ -288,12 +294,88 @@ public void SendMessage(OrderMessage message)
 1. Log in to your Datadog account
 2. Navigate to **APM → Traces**
 3. You should see traces with service names:
-   - `iis-msmq-demo` (or your custom service name)
-4. The distributed trace will show:
-   - HTTP request to Sender App
-   - MSMQ message send operation
-   - MSMQ message receive operation
-   - Message processing in Receiver App
+   - `SenderWebApp`
+   - `ReceiverWebApp`
+
+## ⚠️ Auto-Instrumentation Limitations
+
+This project uses **Datadog's automatic instrumentation** for ASP.NET Web API 2 applications. Understanding what is and isn't automatically traced is important for setting expectations.
+
+### ✅ What IS Auto-Instrumented
+
+According to [Datadog's .NET Framework compatibility documentation](https://docs.datadoghq.com/tracing/trace_collection/compatibility/dotnet-framework/#integrations):
+
+| Component | Status | Integration Name |
+|-----------|--------|------------------|
+| **ASP.NET Web API 2 HTTP Endpoints** | ✅ Automatic | `AspNetWebApi2` |
+| **MSMQ Send Operations** | ✅ Automatic | `Msmq` (built-in) |
+| **MSMQ Receive Operations** | ✅ Automatic* | `Msmq` (built-in) |
+
+\* *Only when called within an HTTP request context*
+
+### ❌ What Is NOT Auto-Instrumented
+
+| Component | Status | Reason |
+|-----------|--------|--------|
+| **Background Services** | ❌ Not Traced | No HTTP context |
+| **Timer-based Workers** | ❌ Not Traced | Runs outside HTTP request/response flow |
+| **Event-Driven MSMQ Receive** | ❌ Not Traced | `BeginReceive()`/`ReceiveCompleted` events run in background threads |
+| **Message Processing Logic** | ❌ Not Traced | Happens in background `Timer`, not HTTP handler |
+
+### 📊 What You'll Actually See
+
+When you send a test order via `GET /api/order/test`, Datadog will trace:
+
+```
+HTTP GET /api/order/test (SenderWebApp) ← Traced automatically
+  └─ msmq.send .\private$\OrderQueue   ← Traced automatically
+```
+
+**However, you will NOT see:**
+```
+❌ msmq.receive (ReceiverWebApp)       ← Not traced (background Timer)
+❌ process.order                        ← Not traced (background worker)
+```
+
+### Why This Happens
+
+1. **MSMQ Send is traced** because it happens **during the HTTP request** to `/api/order/test`
+2. **MSMQ Receive is NOT traced** because:
+   - The `ReceiverWebApp` uses a background `Timer` to poll MSMQ
+   - Background workers run **outside HTTP request contexts**
+   - Datadog's auto-instrumentation focuses on **HTTP request/response flows**
+   - Event-driven patterns (`BeginReceive`/`ReceiveCompleted`) don't have HTTP parent spans
+
+### ✅ Workaround: Generate HTTP Traffic to Receiver
+
+While MSMQ receive operations in background workers aren't traced, you **can** see the ReceiverWebApp in Datadog by hitting its HTTP endpoints:
+
+```powershell
+# Generate HTTP traces for ReceiverWebApp
+curl http://localhost:8082/api/status/health
+curl http://localhost:8082/api/status/queue-status
+```
+
+This will show the ReceiverWebApp service in Datadog APM with HTTP request traces.
+
+### 🔧 For Full Distributed Tracing
+
+To achieve **complete end-to-end tracing** from Sender → MSMQ → Receiver, you would need:
+
+1. **Manual instrumentation** using the `Datadog.Trace` NuGet package
+2. **Trace context propagation** through MSMQ message payloads
+3. **Custom spans** for background worker operations
+
+This requires code changes and is beyond the scope of this **auto-instrumentation demo**.
+
+### 📖 Key Takeaway
+
+This demo shows **what Datadog can trace automatically** without code changes:
+- ✅ ASP.NET Web API 2 HTTP endpoints
+- ✅ MSMQ operations within HTTP contexts
+- ❌ Background workers require manual instrumentation
+
+This is a **realistic limitation** of automatic instrumentation and represents a common pattern in distributed systems where message processing happens asynchronously in background services.
 
 ## Troubleshooting
 
