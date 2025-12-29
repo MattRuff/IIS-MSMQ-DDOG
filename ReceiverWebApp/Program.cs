@@ -40,14 +40,14 @@ namespace ReceiverWebApp
                     retainedFileCountLimit: 7,
                     buffered: false);
 
-            // Add Event Log sink only on Windows
+            // Add Event Log sink only on Windows - captures ALL log levels
             if (Environment.OSVersion.Platform == PlatformID.Win32NT)
             {
                 loggerConfig.WriteTo.EventLog(
                     source: "ReceiverWebApp",
                     logName: "Application",
                     manageEventSource: true,
-                    restrictedToMinimumLevel: Serilog.Events.LogEventLevel.Information);
+                    restrictedToMinimumLevel: Serilog.Events.LogEventLevel.Verbose);
             }
 
             Log.Logger = loggerConfig.CreateLogger();
