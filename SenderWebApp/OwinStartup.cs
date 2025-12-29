@@ -21,6 +21,9 @@ namespace SenderWebApp
         {
             var config = new HttpConfiguration();
 
+            // Register global Serilog action filter for HTTP request logging
+            config.Filters.Add(new SerilogWebApiFilter());
+
             // Enable attribute routing
             config.MapHttpAttributeRoutes();
 
